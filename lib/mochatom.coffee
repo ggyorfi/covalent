@@ -32,8 +32,8 @@ class Mochatom
     @_contextManager.init =>
       # register text editor observer
       @subscriptions.add atom.workspace.onDidChangeActivePaneItem (item) =>
-         context = @_contextManager.getByPath item.getPath?()
-         context?.updateErrorMessage()
+        context = @_contextManager.getByPath item?.getPath?()
+        context?.updateErrorMessage()
 
       @subscriptions.add atom.workspace.observeTextEditors @registerTextEditor
 
@@ -42,8 +42,6 @@ class Mochatom
     if context
       context.modalPanel = @modalPanel # TODO: better way??? MVC???
       context.mochatomView = @mochatomView # TODO: better way??? MVC???
-
-      context.run() if context.isSpec()
 
       subscriptions = new CompositeDisposable
 

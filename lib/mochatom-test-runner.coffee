@@ -135,17 +135,18 @@ class Runner
     for row in rows
       row.replace rx, (str, filePath, line, pos) ->
         fileContext = context.manager.getByPath filePath
-        line = (parseInt line) - 1
-        pos = parseInt pos
-        if fileContext?.sourceMap?
-          consumer = new SourceMapConsumer fileContext.sourceMap
-          # console.log consumer.computeColumnSpans()
-          origpos = consumer.originalPositionFor
-            line: line,
-            column: pos,
-            bias: SourceMapConsumer.LEAST_UPPER_BOUND
-          line = origpos.line
-        fileContext.addDecoration line - 1, 0, 'line-number', 'test-error', msg
+        if fileContext?
+          line = (parseInt line) - 1
+          pos = parseInt pos
+          if fileContext?.sourceMap?
+            consumer = new SourceMapConsumer fileContext.sourceMap
+            # console.log consumer.computeColumnSpans()
+            origpos = consumer.originalPositionFor
+              line: line,
+              column: pos,
+              bias: SourceMapConsumer.LEAST_UPPER_BOUND
+            line = origpos.line
+          fileContext.addDecoration line - 1, 0, 'line-number', 'test-error', msg
 
   _mochaReporter: (mochaRunner) =>
     context = Module.prototype._mochatomActiveContext # TODO: better way???
