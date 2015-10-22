@@ -1,0 +1,34 @@
+// The ui-variables file is provided by base themes provided by Atom.
+//
+// See https://github.com/atom/atom-dark-ui/blob/master/styles/ui-variables.less
+// for a full listing of what's available.
+@import "ui-variables";
+
+atom-text-editor::shadow .gutter .line-number, .gutter .line-number {
+    &.tested-line {
+        background-color: green;
+        color: white;
+    }
+    &.untested-line {
+        background-color: black;
+        color: white;
+    }
+    &.test-error {
+        background-color: red;
+        color: white;
+    }
+}
+
+.mochatom {
+
+    .message {
+        padding: 5px;
+        white-space: pre;
+        font-size: 1.2em;
+
+        strong {
+            color: red;
+        }
+    }
+
+}
