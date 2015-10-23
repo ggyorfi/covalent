@@ -53,7 +53,7 @@ unless Module.prototype._mochatomDefaultRequire
             context.addDependency activeContext
             activeContext.addDependency context
             src = context.editor.getText()
-            transpiled = babel.transform src, sourceMaps: true
+            transpiled = babel.transform src, sourceMaps: true, filename: filePath
             context.sourceMap = transpiled.map
             Module.prototype._mochatomCompileModule transpiled.code, filePath, sandbox2
             instrumented = instrumenter.instrumentSync src, filePath
@@ -93,14 +93,14 @@ class Runner
     sandbox.console = console
     sandbox.expect = chai.expect
     sandbox.sinon = sinon
-    sandbox[context.config.src.expose || '__srcdirname'] =
-      path.join(context.dir, context.config.src.path) + path.sep
+    sandbox[key] = value for key, value of context.config.env
 
-    # init sandbo2
+    # init sandbox2 for error report
     sandbox2 = {}
     vm.createContext sandbox2
     sandbox2.global = sandbox2
     sandbox2.console = console
+    sandbox2[key] = value for key, value of context.config.env
 
     for helper in context.config.helpers
       helperPath = path.join context.dir, helper
@@ -118,7 +118,7 @@ class Runner
         line = parseInt line - 1
         pos = parseInt pos
         errorContext = context.manager.getByPath filePath
-        errorContext.addDecoration line, pos, 'line-number', 'test-error', msg
+        errorContext?.addDecoration line, pos, 'line-number', 'test-error', msg
         @_updateErrorMessage context
         done = true
       @_reportError err, context # unless done
@@ -127,11 +127,8 @@ class Runner
   _reportError: (err, context) ->
     console.log err.stack if context?.config.debug
     rows = err.stack.split /[\r\n]/
-    msg = "<strong>#{rows[0]}</strong>"
+    msg = "<strong>#{err.message}</strong>"
     rx = new RegExp "(#{context.dir}[^:]*):(\\d+)(?::(\\d+))?"
-    for row in rows
-      row.replace "SyntaxError:", ->
-        msg = "<strong>#{row}</strong>"
     for row in rows
       row.replace rx, (str, filePath, line, pos) ->
         fileContext = context.manager.getByPath filePath
@@ -140,7 +137,6 @@ class Runner
           pos = parseInt pos
           if fileContext?.sourceMap?
             consumer = new SourceMapConsumer fileContext.sourceMap
-            # console.log consumer.computeColumnSpans()
             origpos = consumer.originalPositionFor
               line: line,
               column: pos,
