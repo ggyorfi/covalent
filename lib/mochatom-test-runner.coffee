@@ -102,10 +102,12 @@ class Runner
     sandbox2.console = console
     sandbox2[key] = value for key, value of context.config.env
 
-    for helper in context.config.helpers
-      helperPath = path.join context.dir, helper
-      helperSrc = fs.readFileSync helperPath, 'utf8'
-      Module.prototype._mochatomCompileModule helperSrc, helperPath, sandbox
+    if context.config.helpers?
+      for helper in context.config.helpers
+        helperPath = path.join context.dir, helper
+        helperSrc = fs.readFileSync helperPath, 'utf8'
+        Module.prototype._mochatomCompileModule helperSrc, helperPath, sandbox
+
     mocha.addFile context.filePath
 
     try
@@ -153,15 +155,16 @@ class Runner
   _showResults: =>
     activeContext = Module.prototype._mochatomActiveContext
     contextManager = activeContext.manager
-    collector = new Collector
-    collector.add sandbox.__coverage__
-    collector.files().forEach (fname) =>
-      context = contextManager.getByPath fname
-      context.removeAllDecorations()
-      report = @_buildReport collector.fileCoverageFor fname
-      for lc, line in report when lc != undefined
-        className = if lc > 0 then 'tested-line' else 'untested-line'
-        context.addDecoration line - 1, 0, 'line-number', className
+    if sandbox.__coverage__?
+      collector = new Collector
+      collector.add sandbox.__coverage__
+      collector.files().forEach (fname) =>
+        context = contextManager.getByPath fname
+        context.removeAllDecorations()
+        report = @_buildReport collector.fileCoverageFor fname
+        for lc, line in report when lc != undefined
+          className = if lc > 0 then 'tested-line' else 'untested-line'
+          context.addDecoration line - 1, 0, 'line-number', className
     @_updateErrorMessage activeContext
 
   _buildReport: (cov) ->
