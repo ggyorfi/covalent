@@ -1,81 +1,39 @@
 MochatomView = require './mochatom-view'
 {CompositeDisposable} = require 'atom'
-ContextManager = require './mochatom-context-manager'
-TestRunner = require './mochatom-test-runner'
+mochatomModule = require './mochatom-module'
+Context = require './mochatom-context'
 
-class Mochatom
+module.exports = Mochatom =
 
-  constructor: ->
-    @mochatomView = null
-    @modalPanel = null
-    @subscriptions = null
-    @_contextManager = null
+  mochatomView: null
+  modalPanel: null
+  subscriptions: null
 
   activate: (state) ->
-    console.log "Activate Mochatom"
-
-    @_contextManager = new ContextManager new TestRunner
-
-    @mochatomView = new MochatomView state.mochatomViewState
-    @modalPanel = atom.workspace.addBottomPanel item: @mochatomView.getElement(), visible: false
+    @mochatomView = new MochatomView(state.mochatomViewState)
+    @modalPanel = atom.workspace.addBottomPanel(item: @mochatomView.getElement(), visible: false)
 
     # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
     @subscriptions = new CompositeDisposable
 
     # Register command that toggles this view
-    # @subscriptions.add atom.commands.add 'atom-workspace', 'mochatom:toggle': => @toggle()
-
-    @subscriptions.add atom.project.onDidChangePaths (projectPaths) ->
-      # TODO: implement this
-      console.log "onDidChangePaths", projectPaths
-
-    @_contextManager.init =>
-      # register text editor observer
-      @subscriptions.add atom.workspace.onDidChangeActivePaneItem (item) =>
-        context = @_contextManager.getByPath item?.getPath?()
-        context?.updateErrorMessage()
-
-      @subscriptions.add atom.workspace.observeTextEditors @registerTextEditor
-
-  registerTextEditor: (editor) =>
-    context = @_contextManager.register editor
-    if context
-      context.modalPanel = @modalPanel # TODO: better way??? MVC???
-      context.mochatomView = @mochatomView # TODO: better way??? MVC???
-
-      subscriptions = new CompositeDisposable
-
-      subscriptions.add editor.onDidDestroy ->
-        context.remove()
-        subscriptions.dispose()
-
-      subscriptions.add editor.onDidSave ->
-        if context.isSrc()
-          context.runDependencies()
-        else if context.isSpec()
-          context.removeAllDepencies()
-          context.run()
-
-      subscriptions.add editor.onDidChangeCursorPosition ->
-        context.updateErrorMessage()
+    @subscriptions.add atom.commands.add 'atom-workspace', 'mochatom:toggle': => @toggle()
 
   deactivate: ->
-    console.log "Deactivate Mochatom"
-    @subscriptions.dispose()
-    @config = {}
     @modalPanel.destroy()
+    @subscriptions.dispose()
     @mochatomView.destroy()
 
   serialize: ->
-    # mochatomViewState: @mochatomView.serialize()
-    @config
+    mochatomViewState: @mochatomView.serialize()
 
-  # toggle: ->
-  #   console.log 'Start Mochatom!'
-  #
-  #   if @modalPanel.isVisible()
-  #     @modalPanel.hide()
-  #   else
-  #     @modalPanel.show()
+  toggle: ->
+    console.log 'Mochatom was toggled!'
 
-module.exports = new Mochatom
+    if @modalPanel.isVisible()
+      @modalPanel.hide()
+      mochatomModule.resetCache()
+    else
+      @modalPanel.show()
+      Context.start()
+      require '/Users/gabor.gyorfi/Projects/breezy/vdom//lib/Class.js'

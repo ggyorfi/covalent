@@ -1,55 +1,64 @@
+fs = require 'fs'
+path = require 'path'
+vm = require 'vm'
+babel = require 'babel-core'
+Module = require 'module'
+
 class Context
 
-  constructor: (@type, @editor, @filePath, @dir, @config, @manager) ->
-    @_decorations = []
-    @_errorMessages = {}
-    @_dependencies = {}
+  @_errorSandbox: null
+  @_testSandbox: null
 
-  remove: ->
-    @manager.remove this
 
-  isSrc: ->
-    return @type == 'src'
+  @start: ->
+    Context._errorSandbox = {}
+    vm.createContext Context._errorSandbox
+    Context._errorSandbox.console = console
+    Context._errorSandbox.global = Context._errorSandbox
 
-  isSpec: ->
-    return @type == 'spec'
+    Context._testSandbox = {}
+    vm.createContext Context._testSandbox
+    Context._testSandbox.console = console
+    Context._testSandbox.global = Context._testSandbox
 
-  addDecoration: (line, pos, type, className, errorMessage) ->
-    range = [ [ line, pos ], [ line, pos ] ]
-    marker = @editor.markBufferRange range, invalidate: 'never'
-    @_decorations.push @editor.decorateMarker marker, type: type, class: className
-    if errorMessage
-      @_errorMessages[line] = "#{errorMessage}"
 
-  removeAllDecorations: ->
-    decoration.destroy() for decoration in @_decorations
-    @_decorations.length = 0
-    @_errorMessages = {}
-    @modalPanel.hide()
+  @get: (filename) -> new Context filename
 
-  updateErrorMessage: ->
-    row = @editor.getCursorBufferPosition().row
-    errorMessage = @_errorMessages[row]
-    if errorMessage
-      @mochatomView.message.innerHTML = errorMessage
-      @modalPanel.show()
-    else
-      @modalPanel.hide()
 
-  run: () ->
-    @manager._runner.run this
+  constructor: (@filename) ->
+    @content = fs.readFileSync @filename, 'utf8'
 
-  addDependency: (context) ->
-    @_dependencies[context.filePath] = context
+    # stripe BOM
+    if @content.charCodeAt(0) == 0xFEFF
+      @content = @content.slice 1
 
-  removeAllDepencies: ->
-    for own filePath, context of @_dependencies
-      delete context._dependencies[@filePath]
-    @_dependencies = {}
+    @spec = @filename.indexOf("/Users/gabor.gyorfi/Projects/breezy/vdom/test/spec") == 0
+    @src = @filename.indexOf("/Users/gabor.gyorfi/Projects/breezy/vdom/lib") == 0
 
-  runDependencies: ->
-    queue = (item for own key, item of @_dependencies)
-    context.run() for context in queue
-    return
+
+  compile: (m) ->
+    transpiled = babel.transform @content, sourceMaps: true, filename: @filename
+    @map = transpiled.map
+    @_compileModule m, transpiled.code, Context._testSandbox
+
+
+  _compileModule: (m, content, sandbox) ->
+    r = (path) -> m.require path
+    r.resolve = (request) -> Module._resolveFilename request, m
+    r.main = process.mainModule
+    r.extensions = Module._extensions
+    r.cache = Module._cache # ???
+    dirname = path.dirname @filename
+    wrapper = Module.wrap content
+    compiledWrapper = vm.runInContext wrapper, sandbox, filename: @filename
+    args = [ m.exports, r, m, @filename, dirname ]
+    compiledWrapper.apply m.exports, args
+
+
+  # transpile: ->
+  #   Module.prototype._mochatomCompileModule transpiled.code, filePath, sandbox2
+  #   instrumented = instrumenter.instrumentSync src, filePath
+  #   return Module.prototype._mochatomCompileModule instrumented, filePath, sandbox
+
 
 module.exports = Context
