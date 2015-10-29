@@ -10,7 +10,7 @@ unless Module._mochatom
     _cache: {}
 
     isTestRelated: (request, parent) ->
-      request.indexOf("/Users/gabor.gyorfi/Projects/breezy/vdom") == 0
+      request.indexOf("/mochatom_test/") != -1
 
     _load: (request, parent, isMain) ->
       filename = Module._resolveFilename request, parent

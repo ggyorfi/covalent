@@ -36,4 +36,6 @@ module.exports = Mochatom =
     else
       @modalPanel.show()
       Context.start()
-      require '/Users/gabor.gyorfi/Projects/breezy/vdom//lib/Class.js'
+      p = "/Users/ggyorfi/Projects/mochatom_test/spec/"
+      # p = "/Users/gabor.gyorfi/Projects/breezy/vdom/lib/"
+      require p + 'Test-spec.js'

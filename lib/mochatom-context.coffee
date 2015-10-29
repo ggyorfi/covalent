@@ -15,11 +15,13 @@ class Context
     vm.createContext Context._errorSandbox
     Context._errorSandbox.console = console
     Context._errorSandbox.global = Context._errorSandbox
+    Context._errorSandbox.__srcroot = "../lib/"
 
     Context._testSandbox = {}
     vm.createContext Context._testSandbox
     Context._testSandbox.console = console
     Context._testSandbox.global = Context._testSandbox
+    Context._errorSandbox.__srcroot = "../lib/"
 
 
   @get: (filename) -> new Context filename
@@ -32,14 +34,14 @@ class Context
     if @content.charCodeAt(0) == 0xFEFF
       @content = @content.slice 1
 
-    @spec = @filename.indexOf("/Users/gabor.gyorfi/Projects/breezy/vdom/test/spec") == 0
-    @src = @filename.indexOf("/Users/gabor.gyorfi/Projects/breezy/vdom/lib") == 0
+    @spec = @filename.indexOf("/mochatom_test/spec") != -1
+    @src = @filename.indexOf("/mochatom_test/lib") != -1
 
 
   compile: (m) ->
     transpiled = babel.transform @content, sourceMaps: true, filename: @filename
     @map = transpiled.map
-    @_compileModule m, transpiled.code, Context._testSandbox
+    @_compileModule m, transpiled.code, Context._errorSandbox
 
 
   _compileModule: (m, content, sandbox) ->
