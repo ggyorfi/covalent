@@ -1,0 +1,22 @@
+{
+    "src": "{ROOT}/lib/**/*.js",
+    "spec": "{ROOT}/spec/**/*.js",
+    "helpers": [
+        "{ROOT}/test/helpers/window.js"
+    ],
+    "env": {
+        "__SOURCE__": "{ROOT}/lib/"
+    },
+    "compilers": {
+        "coffescript": {
+            "src": "*.coffee"
+        },
+        "babel": {
+            "src": [
+                "{ROOT}/lib/**/*.js",
+                "{ROOT}/spec/**/*.js"
+            ]
+        }
+    },
+    "debug": true
+}

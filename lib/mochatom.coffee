@@ -1,7 +1,8 @@
 MochatomView = require './mochatom-view'
 {CompositeDisposable} = require 'atom'
 mochatomModule = require './mochatom-module'
-Context = require './mochatom-context'
+Config = require './mochatom-config'
+Mocha = require './mochatom-mocha'
 
 module.exports = Mochatom =
 
@@ -19,6 +20,9 @@ module.exports = Mochatom =
     # Register command that toggles this view
     @subscriptions.add atom.commands.add 'atom-workspace', 'mochatom:toggle': => @toggle()
 
+    Promise.all(Config.loadConfigFiles()).then ->
+      console.log Config._config
+
   deactivate: ->
     @modalPanel.destroy()
     @subscriptions.dispose()
@@ -28,14 +32,11 @@ module.exports = Mochatom =
     mochatomViewState: @mochatomView.serialize()
 
   toggle: ->
-    console.log 'Mochatom was toggled!'
-
     if @modalPanel.isVisible()
+      console.log 'Hide Mochatom'
       @modalPanel.hide()
       mochatomModule.resetCache()
     else
+      console.log 'Run Mochatom'
       @modalPanel.show()
-      Context.start()
-      p = "/Users/ggyorfi/Projects/mochatom_test/spec/"
-      # p = "/Users/gabor.gyorfi/Projects/breezy/vdom/lib/"
-      require p + 'Test-spec.js'
+      Mocha.run "/Users/gabor.gyorfi/.atom/packages/mochatom/examples/es6/spec/Test-spec.js"

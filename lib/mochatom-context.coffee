@@ -17,6 +17,8 @@ class Context
     Context._errorSandbox.global = Context._errorSandbox
     Context._errorSandbox.__srcroot = "../lib/"
 
+    Context._errorSandbox.expect = require('chai').expect
+
     Context._testSandbox = {}
     vm.createContext Context._testSandbox
     Context._testSandbox.console = console
@@ -34,8 +36,8 @@ class Context
     if @content.charCodeAt(0) == 0xFEFF
       @content = @content.slice 1
 
-    @spec = @filename.indexOf("/mochatom_test/spec") != -1
-    @src = @filename.indexOf("/mochatom_test/lib") != -1
+    @spec = @filename.indexOf("/mochatom/examples/es6/spec") != -1
+    @src = @filename.indexOf("/mochatom/examples/es6/lib") != -1
 
 
   compile: (m) ->

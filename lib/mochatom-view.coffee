@@ -1,5 +1,5 @@
-module.exports =
-class MochatomView
+module.exports = class MochatomView
+
   constructor: (serializedState) ->
     # Create root element
     @element = document.createElement('div')

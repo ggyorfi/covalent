@@ -10,6 +10,9 @@
     "atom": ">=1.0.0 <2.0.0"
   },
   "dependencies": {
-    "babel-core": "^5.8.30"
+    "babel-core": "^5.8.30",
+    "chai": "^3.4.0",
+    "minimatch": "^3.0.0",
+    "mocha": "^2.3.3"
   }
 }
