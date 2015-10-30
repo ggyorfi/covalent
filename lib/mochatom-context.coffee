@@ -2,48 +2,102 @@ fs = require 'fs'
 path = require 'path'
 vm = require 'vm'
 babel = require 'babel-core'
+minimatch = require 'minimatch'
+isparta = require 'isparta'
+istanbul = require 'istanbul'
+{CompositeDisposable} = require 'atom'
 Module = require 'module'
+Config = require './mochatom-config'
+
 
 class Context
 
-  @_errorSandbox: null
-  @_testSandbox: null
+  @_cache: {}
+  @_sandbox: null
+  @_jsInstrumenter: new istanbul.Instrumenter
+  @_es6Instrumenter: new isparta.Instrumenter
 
 
   @start: ->
-    Context._errorSandbox = {}
-    vm.createContext Context._errorSandbox
-    Context._errorSandbox.console = console
-    Context._errorSandbox.global = Context._errorSandbox
-    Context._errorSandbox.__srcroot = "../lib/"
+    Context._sandbox = {}
+    vm.createContext Context._sandbox
+    Context._sandbox.console = console
+    Context._sandbox.global = Context._sandbox
+    Context._sandbox.__srcroot = "../lib/"
 
-    Context._errorSandbox.expect = require('chai').expect
-
-    Context._testSandbox = {}
-    vm.createContext Context._testSandbox
-    Context._testSandbox.console = console
-    Context._testSandbox.global = Context._testSandbox
-    Context._errorSandbox.__srcroot = "../lib/"
+    Context._sandbox.expect = require('chai').expect
 
 
-  @get: (filename) -> new Context filename
+  @get: (filename) ->
+    # early test for file type
+    ext = path.extname(filename).toLowerCase();
+    return unless ext == '.js' or ext == '.coffee' or ext == '.es6'
+
+    # early test for config
+    return unless config = Config.lookup filename
+
+    return ctx if ctx = Context._cache[filename]
+    Context._cache[filename] = new Context filename, config
 
 
-  constructor: (@filename) ->
-    @content = fs.readFileSync @filename, 'utf8'
+  @registerEditor: (editor) ->
+    return unless ctx = Context.get editor.getPath()
+    subscriptions = new CompositeDisposable
 
-    # stripe BOM
-    if @content.charCodeAt(0) == 0xFEFF
-      @content = @content.slice 1
+    subscriptions.add editor.onDidDestroy ->
+      delete Context._cache[tx.filename]
+      subscriptions.dispose()
 
-    @spec = @filename.indexOf("/mochatom/examples/es6/spec") != -1
-    @src = @filename.indexOf("/mochatom/examples/es6/lib") != -1
+    subscriptions.add editor.onDidSave ->
+      console.log onDidSave ctx.filename
+
+    console.log "====>"
+
+
+  constructor: (@filename, @config) ->
+    @compiler = @src = @spec = false
+    @testRelated = @src = true if @_checkPath @config.src
+    @testRelated = @spec = true if @_checkPath @config.spec
+    for compiler, config of @config.compilers when @_checkPath config.src
+        @compiler = compiler
+        break
+
+  _loadFromFile: ->
+    content = fs.readFileSync @filename, 'utf8'
+    content.slice 1 if content.charCodeAt(0) == 0xFEFF # stripe BOM
+    return content
+
+
+  _checkPath: (patterns) ->
+    if Array.isArray patterns
+      for pattern in patterns
+        return false if pattern.charAt(0) == '!' and minimatch @filename, pattern.substring 1
+      for pattern in patterns
+        return true if pattern.charAt(0) != '!' and minimatch @filename, pattern
+    else
+      return minimatch @filename, patterns
+    return false
+
+
+  _load: ->
+    @_loadFromFile()
 
 
   compile: (m) ->
-    transpiled = babel.transform @content, sourceMaps: true, filename: @filename
-    @map = transpiled.map
-    @_compileModule m, transpiled.code, Context._errorSandbox
+    src = @_load()
+    if @src
+      if @compiler == 'babel'
+        code = Context._es6Instrumenter.instrumentSync src, @filename
+      else
+        code = Context._jsInstrumenter.instrumentSync src, @filename
+    else
+      if @compiler == 'babel'
+        transpiled = babel.transform src, sourceMaps: true, filename: @filename
+        @map = transpiled.map
+        code = transpiled.code
+      else
+        code = src
+    @_compileModule m, code, Context._sandbox
 
 
   _compileModule: (m, content, sandbox) ->
@@ -57,12 +111,6 @@ class Context
     compiledWrapper = vm.runInContext wrapper, sandbox, filename: @filename
     args = [ m.exports, r, m, @filename, dirname ]
     compiledWrapper.apply m.exports, args
-
-
-  # transpile: ->
-  #   Module.prototype._mochatomCompileModule transpiled.code, filePath, sandbox2
-  #   instrumented = instrumenter.instrumentSync src, filePath
-  #   return Module.prototype._mochatomCompileModule instrumented, filePath, sandbox
 
 
 module.exports = Context

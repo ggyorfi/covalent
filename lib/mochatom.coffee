@@ -1,8 +1,9 @@
 MochatomView = require './mochatom-view'
 {CompositeDisposable} = require 'atom'
-mochatomModule = require './mochatom-module'
+MochatomModule = require './mochatom-module'
 Config = require './mochatom-config'
-Mocha = require './mochatom-mocha'
+MochaRunner = require './mochatom-mocha-runner'
+Context = require './mochatom-context'
 
 module.exports = Mochatom =
 
@@ -20,8 +21,20 @@ module.exports = Mochatom =
     # Register command that toggles this view
     @subscriptions.add atom.commands.add 'atom-workspace', 'mochatom:toggle': => @toggle()
 
-    Promise.all(Config.loadConfigFiles()).then ->
-      console.log Config._config
+    @subscriptions.add atom.project.onDidChangePaths (projectPaths) ->
+      # TODO: implement this
+      console.log "onDidChangePaths", projectPaths
+
+    Config.init =>
+      # register text editor observer
+      @subscriptions.add atom.workspace.onDidChangeActivePaneItem (item) =>
+        console.log "onDidChangeActivePaneItem", item
+        # context = @_contextManager.getByPath item?.getPath?()
+        # context?.updateErrorMessage()
+
+      @subscriptions.add atom.workspace.observeTextEditors Context.registerEditor
+      console.log "HIHUHA"
+
 
   deactivate: ->
     @modalPanel.destroy()
@@ -35,8 +48,8 @@ module.exports = Mochatom =
     if @modalPanel.isVisible()
       console.log 'Hide Mochatom'
       @modalPanel.hide()
-      mochatomModule.resetCache()
+      MochatomModule.resetCache()
     else
       console.log 'Run Mochatom'
       @modalPanel.show()
-      Mocha.run "/Users/gabor.gyorfi/.atom/packages/mochatom/examples/es6/spec/Test-spec.js"
+      MochaRunner.run "/Users/gabor.gyorfi/.atom/packages/mochatom/examples/es6/spec/Test-spec.js"

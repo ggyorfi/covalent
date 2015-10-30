@@ -1,5 +1,4 @@
 path = require 'path'
-minimatch = require 'minimatch'
 Module = require 'module'
 Context = require './mochatom-context'
 
@@ -9,12 +8,12 @@ unless Module._mochatom
 
     _prevLoad: Module._load
     _cache: {}
+    enabled: false
 
     _load: (request, parent, isMain) ->
+      return _module._prevLoad request, parent, isMain unless _module.enabled
       filename = Module._resolveFilename request, parent
-      ctx = Context.get filename
-      unless _module.isTestRelated filename, parent
-        return _module._prevLoad request, parent, isMain
+      return _module._prevLoad request, parent, isMain unless ctx  = Context.get filename
       cachedModule = _module._cache[filename]
       return cachedModule.exports if cachedModule
       m = new Module filename, parent

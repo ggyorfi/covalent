@@ -1,8 +1,13 @@
+path = require 'path'
+
 module.exports = Config =
 
-  _config: {}
+  _configs: {}
 
-  loadConfigFiles: ->
+  init: (callback) ->
+    Promise.all(@_loadConfigFiles()).then callback
+
+  _loadConfigFiles: ->
     for dir in atom.project.getDirectories()
       do (dir) =>
         file = dir.getFile 'mochatom.json'
@@ -11,7 +16,7 @@ module.exports = Config =
             dirPath = dir.getPath()
             config = JSON.parse data
             @_prepareConfigObject config, dirPath
-            @_config[dirPath] = config
+            @_configs[dirPath + path.sep] = config
           return # prevent exidental return in promise then
 
   _prepareConfigObject: (config, dirPath) ->
@@ -26,3 +31,6 @@ module.exports = Config =
     config.spec = prepSrc config.spec
     config.helpers = prepSrc config.helpers
     config.env[key] = addRoot value for own key, value of config.env
+
+  lookup: (filename) ->
+    return config for key, config of @_configs when filename.indexOf(key) == 0
