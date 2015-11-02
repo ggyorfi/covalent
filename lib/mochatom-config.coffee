@@ -13,10 +13,11 @@ module.exports = Config =
         file = dir.getFile 'mochatom.json'
         file.read(true).then (data) =>
           if data
-            dirPath = dir.getPath()
+            root = dir.getPath()
             config = JSON.parse data
-            @_prepareConfigObject config, dirPath
-            @_configs[dirPath + path.sep] = config
+            config._root = root + path.sep
+            @_prepareConfigObject config, root
+            @_configs[root + path.sep] = config
           return # prevent exidental return in promise then
 
   _prepareConfigObject: (config, dirPath) ->

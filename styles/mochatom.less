@@ -4,5 +4,33 @@
 // for a full listing of what's available.
 @import "ui-variables";
 
+atom-text-editor::shadow .gutter .line-number, .gutter .line-number {
+    &.tested-line {
+        background-color: green;
+        color: white;
+    }
+    &.untested-line {
+        background-color: black;
+        color: white;
+    }
+    &.test-error {
+        background-color: red;
+        color: white;
+    }
+}
+
 .mochatom {
+
+    .message {
+        overflow-y: auto;
+        max-height: 100px;
+        padding: 5px;
+        white-space: pre;
+        font-size: 1.2em;
+
+        strong {
+            color: red;
+        }
+    }
+
 }

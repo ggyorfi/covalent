@@ -8,8 +8,6 @@ Mocha = require 'mocha'
 {CompositeDisposable} = require 'atom'
 
 
-console.log "MOCHATOM: Init require hack"
-
 _module =
 
   _prevLoad: Module._load
@@ -20,10 +18,8 @@ _module =
     return _module._prevLoad request, parent, isMain unless _module._enabled
     filename = Module._resolveFilename request, parent
     return _module._prevLoad request, parent, isMain unless ctx = ContextManager.get filename
-    console.log "Hacked file: ", filename
     cachedModule = _module._cache[filename]
     return cachedModule.exports if cachedModule
-    console.log "Compile: ", filename
     m = new Module filename, parent
     _module._cache[filename] = module
     m.filename = filename;
@@ -34,19 +30,14 @@ _module =
     m.exports
 
   start: ->
-    console.log "MOCHATOM: Enable module hack"
     @_enabled = true
 
   stop: ->
     @_enabled = false
-    console.log "MOCHATOM: Disable module hack"
     @_cache = {}
-    console.log "MOCHATOM: Reset module cache"
 
 Module._load = _module._load
 
-
-console.log "MOCHATOM: Inint Mocha hack"
 
 Mocha.prototype.loadFiles = (fn) ->
   suite = @suite
@@ -75,7 +66,7 @@ module.exports = ContextManager =
 
 
   stop: ->
-    @_cache = {}
+    # @_cache = {}
     @_sandbox = {}
     _module.stop()
 
@@ -88,22 +79,26 @@ module.exports = ContextManager =
     # early test for config
     return unless config = Config.lookup filename
 
-    console.log "MOCHATOM: #{filename}"
-
     return ctx if ctx = @_cache[filename]
-    @_cache[filename] = new Context filename, config
+    ctx = new Context filename, config
+    ctx.manager = ContextManager
+    @_cache[filename] = ctx
 
 
   registerEditor: (editor) ->
     return unless ctx = ContextManager.get editor.getPath()
-    ctx.manager = ContextManager
+    ctx.editor = editor
     subscriptions = new CompositeDisposable
 
     subscriptions.add editor.onDidDestroy ->
-      delete Context._cache[tx.filename]
+      # delete Context._cache[tx.filename]
+      delete ctx.editor
       subscriptions.dispose()
 
     subscriptions.add editor.onDidSave ->
+      ctx.run() if ctx.spec
+
+    subscriptions.add editor.onDidStopChanging ->
       ctx.run() if ctx.spec
 
 
@@ -114,7 +109,9 @@ module.exports = ContextManager =
     r.extensions = Module._extensions
     r.cache = Module._cache # ???
     dirname = path.dirname filename
-    wrapper = Module.wrap content
+    wrapper = Module.wrap "\n#{content}"
     compiledWrapper = vm.runInContext wrapper, @_sandbox, filename: filename
     args = [ m.exports, r, m, filename, dirname ]
     compiledWrapper.apply m.exports, args
+
+  coverage: -> @_sandbox.__coverage__

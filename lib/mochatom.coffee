@@ -33,7 +33,6 @@ module.exports = Mochatom =
         # context?.updateErrorMessage()
 
       @subscriptions.add atom.workspace.observeTextEditors ContextManager.registerEditor
-      console.log "MOCHATOM: All editors are registered"
 
 
   deactivate: ->
