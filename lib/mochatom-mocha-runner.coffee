@@ -1,27 +1,11 @@
 path = require 'path'
-Mocha = require 'mocha'
-Context = require './mochatom-context'
 Module = require './mochatom-module'
 
-Mocha.prototype.loadFiles = (fn) ->
-  suite = @suite
-  pending = @files.length
-  @files.forEach (file) =>
-    file = path.resolve file
-    suite.emit 'pre-require', Context._sandbox, file, this
-    suite.emit 'require', require(file), file, this
-    suite.emit 'post-require', Context._sandbox, file, this
-    --pending || (fn && fn())
+console.log Module, ContextManager
+
 
 module.exports =
 
-  run: (filename) ->
-    Module.enabled = true
-    Context.start()
-    mocha = new Mocha();
-    mocha.addFile filename
-    mocha.run -> # @_showResults
-      console.log "DONE"
 
   # _showResults: =>
   #   activeContext = Module.prototype._mochatomActiveContext

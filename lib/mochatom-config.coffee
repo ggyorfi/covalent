@@ -29,7 +29,7 @@ module.exports = Config =
     comp.src = prepSrc comp.src for own name, comp of config.compilers when comp.src?
     config.src = prepSrc config.src
     config.spec = prepSrc config.spec
-    config.helpers = prepSrc config.helpers
+    config.helpers = prepSrc config.helpers if config.helpers?
     config.env[key] = addRoot value for own key, value of config.env
 
   lookup: (filename) ->

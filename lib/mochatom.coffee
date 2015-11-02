@@ -1,9 +1,7 @@
 MochatomView = require './mochatom-view'
 {CompositeDisposable} = require 'atom'
-MochatomModule = require './mochatom-module'
 Config = require './mochatom-config'
-MochaRunner = require './mochatom-mocha-runner'
-Context = require './mochatom-context'
+ContextManager = require './mochatom-context-manager'
 
 module.exports = Mochatom =
 
@@ -12,6 +10,8 @@ module.exports = Mochatom =
   subscriptions: null
 
   activate: (state) ->
+    console.log "MOCHATOM: Activate"
+
     @mochatomView = new MochatomView(state.mochatomViewState)
     @modalPanel = atom.workspace.addBottomPanel(item: @mochatomView.getElement(), visible: false)
 
@@ -32,8 +32,8 @@ module.exports = Mochatom =
         # context = @_contextManager.getByPath item?.getPath?()
         # context?.updateErrorMessage()
 
-      @subscriptions.add atom.workspace.observeTextEditors Context.registerEditor
-      console.log "HIHUHA"
+      @subscriptions.add atom.workspace.observeTextEditors ContextManager.registerEditor
+      console.log "MOCHATOM: All editors are registered"
 
 
   deactivate: ->
@@ -46,10 +46,8 @@ module.exports = Mochatom =
 
   toggle: ->
     if @modalPanel.isVisible()
-      console.log 'Hide Mochatom'
+      console.log 'Disable Mochatom'
       @modalPanel.hide()
-      MochatomModule.resetCache()
     else
-      console.log 'Run Mochatom'
+      console.log 'Enable Mochatom'
       @modalPanel.show()
-      MochaRunner.run "/Users/gabor.gyorfi/.atom/packages/mochatom/examples/es6/spec/Test-spec.js"
