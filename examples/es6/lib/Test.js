@@ -1,19 +1,21 @@
-class X {
-
-    a() {
-        console.log(123);
-    }
-
+function Test() {
+    // NOOP
 }
 
-export default class Test extends X {
+Test.prototype.returnValue = function (p) {
+    return p;```
+};
 
-    returnValue(p) {
-        null.x;
-        return p;
-    }
+module.exports = Test;
 
-}
+
+
+
+
+
+
+
+
 
 
 

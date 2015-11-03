@@ -13,7 +13,7 @@
         },
         "babel": {
             "src": [
-                "{ROOT}/lib/**/*.js",
+                "X{ROOT}/lib/**/*.js",
                 "{ROOT}/spec/**/*.js"
             ]
         }

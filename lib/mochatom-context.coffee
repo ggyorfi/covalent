@@ -11,7 +11,8 @@ Base = Mocha.reporters.Base
 
 class Context
 
-  @_jsInstrumenter: new istanbul.Instrumenter
+  @_pass = null
+  @_jsInstrumenter: new istanbul.Instrumenter noCompact: true
   @_es6Instrumenter: new isparta.Instrumenter
 
 
@@ -27,7 +28,7 @@ class Context
 
 
   run: () ->
-    @removeAllDecorations();
+    Context._pass = "TEST"
     @manager.start()
     mocha = new Mocha();
     mocha.reporter @_mochaReporter
@@ -35,7 +36,14 @@ class Context
     try
       mocha.run @_showResults
     catch err
-      @_reportError err
+      @manager.stop()
+      @manager.start()
+      mocha = new Mocha();
+      mocha.reporter @_mochaReporter
+      mocha.addFile @filename
+      Context._pass = "ERROR_REPORT"
+      mocha.run()
+
 
   _mochaReporter: (mochaRunner) =>
     # context = Module.prototype._mochatomActiveContext # TODO: better way???
@@ -46,7 +54,7 @@ class Context
 
 
   _reportError: (err) ->
-    console.log err.stack if @config.debug
+    console.log err if @config.debug
     rows = err.stack.split /[\r\n]/
     msg = "<strong>#{err.message}</strong>"
     rx = new RegExp "(#{@config._root}[^:]*):.*?(\\d+)(?::(\\d+))?"
@@ -72,22 +80,42 @@ class Context
   compile: (m) ->
     src = @_load()
     if @src
-      try
+      if Context._pass == "TEST"
+        try
+          if @compiler == 'babel'
+            code = Context._es6Instrumenter.instrumentSync src, @filename
+          else
+            code = Context._jsInstrumenter.instrumentSync src, @filename
+        catch err
+          throw "START_ERROR_REPORT_PASS"
+      else # error report mode
         if @compiler == 'babel'
-          code = Context._es6Instrumenter.instrumentSync src, @filename
+          try
+            transpiled = babel.transform src, sourceMaps: true, filename: @filename
+            @map = transpiled.map
+            code = transpiled.code
+          catch err
+            err._compileError = true
+            @_reportError err
         else
-          code = Context._jsInstrumenter.instrumentSync src, @filename
-      catch err
-        err._compileError = true
-        throw err
+          code = src
     else
       if @compiler == 'babel'
-        transpiled = babel.transform src, sourceMaps: true, filename: @filename
-        @map = transpiled.map
-        code = transpiled.code
+        try
+          transpiled = babel.transform src, sourceMaps: true, filename: @filename
+          @map = transpiled.map
+          code = transpiled.code
+        catch err
+          err._compileError = true
+          @_reportError err
       else
         code = src
-    @manager.compileModule m, code, @filename
+    try
+      @manager.compileModule m, code, @filename
+    catch err
+      throw err if err == "START_ERROR_REPORT_PASS"
+      err._compileError = true
+      @_reportError err
 
 
   _loadFromFile: ->
