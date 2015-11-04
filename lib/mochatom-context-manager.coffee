@@ -8,20 +8,36 @@ Mocha = require 'mocha'
 {CompositeDisposable} = require 'atom'
 
 
-_module =
+class ContextManager
 
-  _prevLoad: Module._load
-  _cache: {}
-  _enabled: false
 
-  _load: (request, parent, isMain) ->
-    return _module._prevLoad request, parent, isMain unless _module._enabled
+  constructor: ->
+    @_config = null
+    @_contexCache = {}
+    @_moduleCache = null
+    @_prevModuleLoad = null
+    @_sandbox = null
+    @_isModuleHackEnabled = false
+    @_decorationManager
+
+
+  init: (options) ->
+    @_config = options.config
+    @_decorationManager = options.decorationManager
+    @_prevModuleLoad = Module._load
+    Module._load = @_moduleLoad
+    Mocha.prototype.loadFiles = @_mochaLoadFiles
+    Mocha.prototype._mochatomManager = this
+
+
+  _moduleLoad: (request, parent, isMain) =>
+    return @_prevModuleLoad request, parent, isMain unless @_isModuleHackEnabled
     filename = Module._resolveFilename request, parent
-    return _module._prevLoad request, parent, isMain unless ctx = ContextManager.get filename
-    cachedModule = _module._cache[filename]
+    return @_prevModuleLoad request, parent, isMain unless ctx = @get filename
+    cachedModule = @_moduleCache[filename]
     return cachedModule.exports if cachedModule
     m = new Module filename, parent
-    _module._cache[filename] = module
+    @_moduleCache[filename] = module
     m.filename = filename;
     m.paths = Module._nodeModulePaths path.dirname filename
     ctx.compile m
@@ -29,35 +45,22 @@ _module =
     # handle exceptions + remove from cache
     m.exports
 
-  start: ->
-    @_enabled = true
 
-  stop: ->
-    @_enabled = false
-    @_cache = {}
-
-Module._load = _module._load
-
-
-Mocha.prototype.loadFiles = (fn) ->
-  suite = @suite
-  pending = @files.length
-  @files.forEach (file) =>
-    file = path.resolve file
-    suite.emit 'pre-require', ContextManager._sandbox, file, this
-    suite.emit 'require', require(file), file, this
-    suite.emit 'post-require', ContextManager._sandbox, file, this
-    --pending || (fn && fn())
-
-
-module.exports = ContextManager =
-
-  _cache: {}
-  _sandbox: {}
+  _mochaLoadFiles: (fn) ->
+    suite = @suite
+    pending = @files.length
+    @files.forEach (file) =>
+      file = path.resolve file
+      suite.emit 'pre-require', @_mochatomManager._sandbox, file, this
+      suite.emit 'require', require(file), file, this
+      suite.emit 'post-require', @_mochatomManager._sandbox, file, this
+      --pending || (fn && fn())
 
 
   start: ->
-    _module.start()
+    @_isModuleHackEnabled = true
+    @_moduleCache = {}
+    @_sandbox = {}
     vm.createContext @_sandbox
     @_sandbox.console = console
     @_sandbox.global = @_sandbox
@@ -66,9 +69,9 @@ module.exports = ContextManager =
 
 
   stop: ->
-    # @_cache = {}
-    @_sandbox = {}
-    _module.stop()
+    @_isModuleHackEnabled = false
+    @_moduleCache = null
+    @_sandbox = null
 
 
   get: (filename) ->
@@ -77,29 +80,31 @@ module.exports = ContextManager =
     return unless ext == '.js' or ext == '.coffee' or ext == '.es6'
 
     # early test for config
-    return unless config = Config.lookup filename
+    return unless config = @_config.lookup filename
 
-    return ctx if ctx = @_cache[filename]
-    ctx = new Context filename, config
-    ctx.manager = ContextManager
-    @_cache[filename] = ctx
+    return ctx if ctx = @_contexCache[filename]
+    ctx = new Context filename, config, @_decorationManager # TODO: IOC container???
+    ctx.manager = this
+    @_contexCache[filename] = ctx
 
 
-  registerEditor: (editor) ->
-    return unless ctx = ContextManager.get editor.getPath()
-    ctx.editor = editor
+  registerEditor: (editor) =>
+    return unless ctx = @get editor.getPath()
+    ctx.editor = editor # TODO: -> attachEditor
     subscriptions = new CompositeDisposable
 
     subscriptions.add editor.onDidDestroy ->
-      # delete Context._cache[tx.filename]
-      delete ctx.editor
+      delete ctx.editor # TODO: -> detachEditor
       subscriptions.dispose()
 
     subscriptions.add editor.onDidSave ->
-      ctx.run() if ctx.spec
+      ctx.run() if ctx.spec # TODO: -> move logic to Context class
 
     subscriptions.add editor.onDidStopChanging ->
-      ctx.run() if ctx.spec
+      ctx.run() if ctx.spec # TODO: -> move logic to Context class + configurable
+
+    subscriptions.add editor.onDidChangeCursorPosition =>
+      @_decorationManager.updateErrorMessage()
 
 
   compileModule: (m, content, filename) ->
@@ -114,4 +119,9 @@ module.exports = ContextManager =
     args = [ m.exports, r, m, filename, dirname ]
     compiledWrapper.apply m.exports, args
 
-  coverage: -> @_sandbox.__coverage__
+
+  coverage: ->
+    @_sandbox.__coverage__
+
+
+module.exports = ContextManager

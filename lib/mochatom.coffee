@@ -2,18 +2,21 @@ MochatomView = require './mochatom-view'
 {CompositeDisposable} = require 'atom'
 Config = require './mochatom-config'
 ContextManager = require './mochatom-context-manager'
+DecorationManager = require './mochatom-decoration-manager'
 
 module.exports = Mochatom =
 
   mochatomView: null
   modalPanel: null
   subscriptions: null
+  contextManager: null
+  decorationManager: null
 
   activate: (state) ->
     console.log "MOCHATOM: Activate"
 
-    @mochatomView = new MochatomView(state.mochatomViewState)
-    @modalPanel = atom.workspace.addBottomPanel(item: @mochatomView.getElement(), visible: false)
+    @mochatomView = new MochatomView state.mochatomViewState
+    @modalPanel = atom.workspace.addBottomPanel item: @mochatomView.getElement(), visible: false
 
     # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
     @subscriptions = new CompositeDisposable
@@ -25,14 +28,20 @@ module.exports = Mochatom =
       # TODO: implement this
       console.log "onDidChangePaths", projectPaths
 
-    Config.init =>
+    Config.init => # TODO: use the ready() pattern
       # register text editor observer
-      @subscriptions.add atom.workspace.onDidChangeActivePaneItem (item) =>
-        console.log "onDidChangeActivePaneItem", item
+      @decorationManager = new DecorationManager
+      @decorationManager.init todo: this # TODO: :)
+      @contextManager =  new ContextManager
+      @contextManager.init config: Config, decorationManager: @decorationManager
+      @subscriptions.add atom.workspace.onDidChangeActivePaneItem @decorationManager.updateErrorMessage
+
+        # (item) =>
+        # console.log "onDidChangeActivePaneItem", item
         # context = @_contextManager.getByPath item?.getPath?()
         # context?.updateErrorMessage()
 
-      @subscriptions.add atom.workspace.observeTextEditors ContextManager.registerEditor
+      @subscriptions.add atom.workspace.observeTextEditors @contextManager.registerEditor
 
 
   deactivate: ->

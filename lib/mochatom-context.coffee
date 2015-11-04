@@ -9,6 +9,7 @@ Mocha = require 'mocha'
 Base = Mocha.reporters.Base
 {SourceMapConsumer} = require 'source-map'
 
+
 class Context
 
   @_pass = null
@@ -16,9 +17,7 @@ class Context
   @_es6Instrumenter: new isparta.Instrumenter
 
 
-  constructor: (@filename, @config) ->
-    @_decorations = []
-    @_errorMessages = []
+  constructor: (@filename, @config, @decorationManager) ->
     @compiler = @src = @spec = false
     @testRelated = @src = true if @_checkPath @config.src
     @testRelated = @spec = true if @_checkPath @config.spec
@@ -42,7 +41,7 @@ class Context
       mocha.reporter @_mochaReporter
       mocha.addFile @filename
       Context._pass = "ERROR_REPORT"
-      mocha.run()
+      mocha.run => @decorationManager.applyDecorations()
 
 
   _mochaReporter: (mochaRunner) =>
@@ -54,7 +53,7 @@ class Context
 
 
   _reportError: (err) ->
-    console.log err if @config.debug
+    log = true
     rows = err.stack.split /[\r\n]/
     msg = "<strong>#{err.message}</strong>"
     rx = new RegExp "(#{@config._root}[^:]*):.*?(\\d+)(?::(\\d+))?"
@@ -74,7 +73,9 @@ class Context
               column: pos,
               bias: SourceMapConsumer.LEAST_UPPER_BOUND
             line = origpos.line
-          ctx.addDecoration line - 1, 0, 'line-number', 'test-error', msg
+          @decorationManager.addDecoration ctx, line - 1, 'test-error', msg
+          log = false
+    console.log err if log and @config.debug
 
 
   compile: (m) ->
@@ -148,29 +149,14 @@ class Context
       collector.files().forEach (filename) =>
         ctx = @manager.get filename
         if ctx?.editor?
-          ctx.removeAllDecorations()
+          # ctx.removeAllDecorations()
           report = @_buildReport collector.fileCoverageFor filename
           for lc, line in report when lc != undefined
             className = if lc > 0 then 'tested-line' else 'untested-line'
-            ctx.addDecoration line - 1, 0, 'line-number', className
-    # @_updateErrorMessage activeContext
+            @decorationManager.addDecoration ctx, line - 1, className
+      @decorationManager.applyDecorations()
 
     @manager.stop()
-
-
-  removeAllDecorations: ->
-    decoration.destroy() for decoration in @_decorations
-    @_decorations.length = 0
-    @_errorMessages = {}
-    # @modalPanel.hide()
-
-
-  addDecoration: (line, pos, type, className, errorMessage) ->
-    range = [ [ line, pos ], [ line, pos ] ]
-    marker = @editor.markBufferRange range, invalidate: 'never'
-    @_decorations.push @editor.decorateMarker marker, type: type, class: className
-    if errorMessage
-      @_errorMessages[line] = "#{errorMessage}"
 
 
   _buildReport: (cov) ->
@@ -184,12 +170,6 @@ class Context
         for line in [ info.start.line .. info.end.line ]
           report[line] = 0
     report
-
-  # _updateErrorMessage: () ->
-  #   item = atom.workspace.getActivePaneItem()
-  #   context = context.manager.getByPath item?.getPath?()
-  #   context?.updateErrorMessage()
-
 
 
 module.exports = Context
