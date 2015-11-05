@@ -3,7 +3,8 @@ function Test() {
 }
 
 Test.prototype.returnValue = function (p) {
-    return p;```
+    return x.z;
+    return p;
 };
 
 module.exports = Test;

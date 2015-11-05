@@ -10,22 +10,33 @@ class DecorationManager
     @_todo = options.todo # TODO: :)
 
 
+  update: (ctx) ->
+    desc = @_getDesc ctx
+    desc.update = true
+
   addDecoration: (ctx, line, className, errorMessage) ->
-    unless desc = @_decorations[ctx.filename]
-      desc = @_decorations[ctx.filename] =
-        ctx: ctx
-        queue: []
-        decorations: []
-        errorMessages: {}
+    desc = @_getDesc ctx
     desc.queue.push
       line: line
       className: className
       errorMessage: errorMessage
 
 
+  _getDesc: (ctx) ->
+    unless desc = @_decorations[ctx.filename]
+      desc = @_decorations[ctx.filename] =
+        ctx: ctx
+        update: true
+        queue: []
+        decorations: []
+        errorMessages: {}
+    return desc
+
+
   applyDecorations: () ->
     for filename, desc of @_decorations
-      if desc.ctx.editor and desc.queue.length > 0
+      if desc.ctx.editor and desc.update
+        desc.update = false
         decoration.destroy() for decoration in desc.decorations
         desc.decorations.length = 0
         for item in desc.queue
@@ -45,14 +56,10 @@ class DecorationManager
       row = desc.ctx.editor.getCursorBufferPosition().row
       errorMessage = desc.errorMessages[row]
       if errorMessage
-        @_todo.mochatomView.message.innerHTML = errorMessage
+        @_todo.mochatomView.message.innerHTML = "Mochatom #{errorMessage}"
         @_todo.modalPanel.show()
         return
     @_todo.modalPanel.hide()
-
-
-
-
 
 
 module.exports = DecorationManager

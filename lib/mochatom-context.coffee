@@ -18,6 +18,7 @@ class Context
 
 
   constructor: (@filename, @config, @decorationManager) ->
+    @lineOffset = 0
     @compiler = @src = @spec = false
     @testRelated = @src = true if @_checkPath @config.src
     @testRelated = @spec = true if @_checkPath @config.spec
@@ -53,18 +54,16 @@ class Context
 
 
   _reportError: (err) ->
-    log = true
+    console.info "%c#{err.stack}", "color: blue" if @config.debug
     rows = err.stack.split /[\r\n]/
     msg = "<strong>#{err.message}</strong>"
     rx = new RegExp "(#{@config._root}[^:]*):.*?(\\d+)(?::(\\d+))?"
+    done = false
     for row in rows
       row.replace rx, (str, filename, line, pos) =>
         if ctx = @manager.get filename
-          if err._compileError
-            offset = 0
-          else
-            offset = -1
-          line = Math.max (parseInt line) + offset, 1
+          line = (parseInt line) + ctx.lineOffset
+          console.log line, ctx.lineOffset, row, ctx.map
           pos = parseInt pos
           if ctx.map?
             consumer = new SourceMapConsumer ctx.map
@@ -74,11 +73,12 @@ class Context
               bias: SourceMapConsumer.LEAST_UPPER_BOUND
             line = origpos.line
           @decorationManager.addDecoration ctx, line - 1, 'test-error', msg
-          log = false
-    console.log err if log and @config.debug
+          done = true
+      break if done
 
 
   compile: (m) ->
+    @decorationManager.update this
     src = @_load()
     if @src
       if Context._pass == "TEST"
@@ -96,26 +96,26 @@ class Context
             @map = transpiled.map
             code = transpiled.code
           catch err
-            err._compileError = true
             @_reportError err
         else
+          @lineOffset = -1
           code = src
     else
       if @compiler == 'babel'
         try
+          @lineOffset = -1
           transpiled = babel.transform src, sourceMaps: true, filename: @filename
           @map = transpiled.map
           code = transpiled.code
         catch err
-          err._compileError = true
           @_reportError err
       else
         code = src
     try
       @manager.compileModule m, code, @filename
     catch err
-      throw err if err == "START_ERROR_REPORT_PASS"
-      err._compileError = true
+      console.log err, Context._pass
+      throw "START_ERROR_REPORT_PASS" if Context._pass == "TEST"
       @_reportError err
 
 
