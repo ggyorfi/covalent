@@ -1,4 +1,4 @@
-import Test from '../lib/Test';
+import Test from '../lib/CoffeeTest';
 
 describe("Test", function () {
 
@@ -11,11 +11,11 @@ describe("Test", function () {
     describe("test()", function () {
 
         it("returns the parameter", function () {
-            // expect(_test.returnValue(10)).to.equal(10);
+            expect(_test.returnValue(10)).to.equal(10);
         });
 
         it("returns the parameter", function () {
-            expect(_test.returnValue(10)).to.equal(11);
+            // expect(_test.returnValue(10)).to.equal(11);
         });
 
     });

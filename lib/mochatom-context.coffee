@@ -8,13 +8,17 @@ Module = require 'module'
 Mocha = require 'mocha'
 Base = Mocha.reporters.Base
 {SourceMapConsumer} = require 'source-map'
-
+coffeeCoverage = require 'coffee-coverage'
+coffee = require 'coffee-script'
+console.log coffee
 
 class Context
 
   @_pass = null
-  @_jsInstrumenter: new istanbul.Instrumenter noCompact: true
+  @_jsInstrumenter: new istanbul.Instrumenter
   @_es6Instrumenter: new isparta.Instrumenter
+  @_coffeeInstrumenter: new coffeeCoverage.CoverageInstrumentor instrumentor: 'istanbul', coverageVar: '__coverage__'
+  @_runtimeError: false
 
 
   constructor: (@filename, @config, @decorationManager) ->
@@ -28,29 +32,48 @@ class Context
 
 
   run: () ->
+    Context._runtimeError = false
     Context._pass = "TEST"
     @manager.start()
     mocha = new Mocha();
     mocha.reporter @_mochaReporter
     mocha.addFile @filename
     try
-      mocha.run @_showResults
+      mocha.run =>
+        if Context._runtimeError
+          cov = @manager.coverage()
+          @manager.stop()
+          @manager.start()
+          mocha = new Mocha();
+          mocha.reporter @_mochaReporter
+          mocha.addFile @filename
+          Context._pass = "ERROR_REPORT"
+          try
+            mocha.run =>
+              @_showResults cov
+              @decorationManager.applyDecorations()
+              @manager.stop()
+          catch err
+            @_showResults cov
+            @_reportError err
+            @decorationManager.applyDecorations()
+            @manager.stop()
+        else
+          @_showResults @manager.coverage()
+          @decorationManager.applyDecorations()
+          @manager.stop()
     catch err
-      @manager.stop()
-      @manager.start()
-      mocha = new Mocha();
-      mocha.reporter @_mochaReporter
-      mocha.addFile @filename
-      Context._pass = "ERROR_REPORT"
-      mocha.run => @decorationManager.applyDecorations()
+      Context._runtimeError = true
+
 
 
   _mochaReporter: (mochaRunner) =>
-    # context = Module.prototype._mochatomActiveContext # TODO: better way???
     Base.call @, mochaRunner
     mochaRunner.on 'fail', (test) =>
-      # console.log "FAIL", test, this
-      @_reportError test.err
+      if Context._pass == "TEST"
+        Context._runtimeError = true
+      else
+        @_reportError test.err
 
 
   _reportError: (err) ->
@@ -63,7 +86,6 @@ class Context
       row.replace rx, (str, filename, line, pos) =>
         if ctx = @manager.get filename
           line = (parseInt line) + ctx.lineOffset
-          console.log line, ctx.lineOffset, row, ctx.map
           pos = parseInt pos
           if ctx.map?
             consumer = new SourceMapConsumer ctx.map
@@ -80,43 +102,58 @@ class Context
   compile: (m) ->
     @decorationManager.update this
     src = @_load()
-    if @src
-      if Context._pass == "TEST"
-        try
-          if @compiler == 'babel'
-            code = Context._es6Instrumenter.instrumentSync src, @filename
-          else
-            code = Context._jsInstrumenter.instrumentSync src, @filename
-        catch err
-          throw "START_ERROR_REPORT_PASS"
-      else # error report mode
-        if @compiler == 'babel'
-          try
-            transpiled = babel.transform src, sourceMaps: true, filename: @filename
-            @map = transpiled.map
-            code = transpiled.code
-          catch err
-            @_reportError err
-        else
-          @lineOffset = -1
-          code = src
-    else
-      if @compiler == 'babel'
-        try
-          @lineOffset = -1
-          transpiled = babel.transform src, sourceMaps: true, filename: @filename
-          @map = transpiled.map
-          code = transpiled.code
-        catch err
-          @_reportError err
-      else
-        code = src
+    @lineOffset = 0
     try
-      @manager.compileModule m, code, @filename
+      src = if @src then @_compileSrc src else @_compileTest src
+      @manager.compileModule m, src, @filename
     catch err
-      console.log err, Context._pass
-      throw "START_ERROR_REPORT_PASS" if Context._pass == "TEST"
-      @_reportError err
+      if Context._pass == "TEST"
+        Context._runtimeError = true
+      else
+        console.log ">>>", err
+        throw err
+
+
+  _compileSrc: (src) ->
+    if Context._pass == "TEST"
+      if @compiler == 'babel'
+        src = Context._es6Instrumenter.instrumentSync src, @filename
+        console.log src
+      else if @compiler == 'coffeescript'
+        code = Context._coffeeInstrumenter.instrumentCoffee @filename, src
+        src = "#{code.init}#{code.js}"
+        # src = "var g = (Function('return this'))();(function(global) {#{code.init}#{code.js}}).call(g,g))"
+        console.log src
+      else
+        src = Context._jsInstrumenter.instrumentSync src, @filename
+    else # error report mode
+      if @compiler == 'babel'
+        @map = null
+        transpiled = babel.transform src, sourceMaps: true, filename: @filename
+        @map = transpiled.map
+        src = transpiled.code
+      else if @compiler == 'coffeescript'
+        @map = null
+        compiled = compiled = coffee.compile src, filename: @filename, sourceMap: true
+        @map = compiled.v3SourceMap
+        src = compiled.js
+      else
+        @lineOffset = -1
+    return src
+
+
+  _compileTest: (src) ->
+    if @compiler == 'babel'
+      @lineOffset = -1
+      @map = null
+      try
+        transpiled = babel.transform src, sourceMaps: true, filename: @filename
+        @map = transpiled.map
+        src = transpiled.code
+      catch err
+        @lineOffset = 0
+        throw err
+    return src
 
 
   _loadFromFile: ->
@@ -132,6 +169,7 @@ class Context
       for pattern in patterns
         return true if pattern.charAt(0) != '!' and minimatch @filename, pattern
     else
+      console.log @filename, patterns, minimatch @filename, patterns
       return minimatch @filename, patterns
     return false
 
@@ -141,8 +179,7 @@ class Context
     @_loadFromFile()
 
 
-  _showResults: =>
-    cov = @manager.coverage()
+  _showResults: (cov) =>
     if cov?
       collector = new istanbul.Collector
       collector.add cov
@@ -150,26 +187,13 @@ class Context
         ctx = @manager.get filename
         if ctx?.editor?
           # ctx.removeAllDecorations()
-          report = @_buildReport collector.fileCoverageFor filename
-          for lc, line in report when lc != undefined
+          report = collector.fileCoverageFor filename
+          for line, lc of report.l # when lc != undefined
             className = if lc > 0 then 'tested-line' else 'untested-line'
-            @decorationManager.addDecoration ctx, line - 1, className
+            @decorationManager.addDecoration ctx, parseInt(line) - 1, className
       @decorationManager.applyDecorations()
 
     @manager.stop()
-
-
-  _buildReport: (cov) ->
-    report = []
-    for idx, s of cov.s
-      info = cov.statementMap[parseInt idx]
-      if s > 0
-        for line in [ info.start.line .. info.end.line ]
-          report[line] = (report[line] || 0) + 1
-      else
-        for line in [ info.start.line .. info.end.line ]
-          report[line] = 0
-    report
 
 
 module.exports = Context

@@ -3,7 +3,7 @@ function Test() {
 }
 
 Test.prototype.returnValue = function (p) {
-    return x.z;
+    // x.y.z = 10;
     return p;
 };
 

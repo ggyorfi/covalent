@@ -1,5 +1,5 @@
 {
-    "src": "{ROOT}/lib/**/*.js",
+    "src": "{ROOT}/lib/**/*.+(js|coffee)",
     "spec": "{ROOT}/spec/**/*.js",
     "helpers": [
         "{ROOT}/test/helpers/window.js"
@@ -8,15 +8,15 @@
         "__SOURCE__": "{ROOT}/lib/"
     },
     "compilers": {
-        "coffescript": {
-            "src": "*.coffee"
+        "coffeescript": {
+            "src": "{ROOT}/**/*.coffee"
         },
         "babel": {
             "src": [
-                "X{ROOT}/lib/**/*.js",
+                "{ROOT}/lib/**/*.js",
                 "{ROOT}/spec/**/*.js"
             ]
         }
     },
-    "debug": true
+    "debug": false
 }
