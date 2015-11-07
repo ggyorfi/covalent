@@ -10,7 +10,6 @@ Base = Mocha.reporters.Base
 {SourceMapConsumer} = require 'source-map'
 coffeeCoverage = require 'coffee-coverage'
 coffee = require 'coffee-script'
-console.log coffee
 
 class Context
 
@@ -41,21 +40,20 @@ class Context
     try
       mocha.run =>
         if Context._runtimeError
+          Context._pass = "REPORT"
           cov = @manager.coverage()
-          @manager.stop()
           @manager.start()
           mocha = new Mocha();
           mocha.reporter @_mochaReporter
           mocha.addFile @filename
-          Context._pass = "ERROR_REPORT"
           try
             mocha.run =>
               @_showResults cov
               @decorationManager.applyDecorations()
               @manager.stop()
           catch err
-            @_showResults cov
             @_reportError err
+            @_showResults cov
             @decorationManager.applyDecorations()
             @manager.stop()
         else
@@ -110,7 +108,6 @@ class Context
       if Context._pass == "TEST"
         Context._runtimeError = true
       else
-        console.log ">>>", err
         throw err
 
 
@@ -118,12 +115,9 @@ class Context
     if Context._pass == "TEST"
       if @compiler == 'babel'
         src = Context._es6Instrumenter.instrumentSync src, @filename
-        console.log src
       else if @compiler == 'coffeescript'
         code = Context._coffeeInstrumenter.instrumentCoffee @filename, src
         src = "#{code.init}#{code.js}"
-        # src = "var g = (Function('return this'))();(function(global) {#{code.init}#{code.js}}).call(g,g))"
-        console.log src
       else
         src = Context._jsInstrumenter.instrumentSync src, @filename
     else # error report mode
@@ -133,12 +127,23 @@ class Context
         @map = transpiled.map
         src = transpiled.code
       else if @compiler == 'coffeescript'
-        @map = null
-        compiled = compiled = coffee.compile src, filename: @filename, sourceMap: true
-        @map = compiled.v3SourceMap
-        src = compiled.js
+        src = @_compileCoffe src
       else
         @lineOffset = -1
+    return src
+
+
+  _compileCoffe: (src) ->
+    @lineOffset = -1
+    @map = null
+    try
+      compiled = coffee.compile src, filename: @filename, sourceMap: true
+      @map = compiled.v3SourceMap
+      return compiled.js
+    catch err
+      @lineOffset = 0
+      err.message = "#{err}"
+      throw err
     return src
 
 
@@ -153,6 +158,8 @@ class Context
       catch err
         @lineOffset = 0
         throw err
+    else if @compiler == 'coffeescript'
+      src = @_compileCoffe src
     return src
 
 
@@ -163,16 +170,21 @@ class Context
 
 
   _checkPath: (patterns) ->
+    console.log "match:", @filename
     if Array.isArray patterns
       for pattern in patterns
-        return false if pattern.charAt(0) == '!' and minimatch @filename, pattern.substring 1
+        excluded = pattern.charAt(0) == '!' and minimatch @filename, pattern.substring 1
+        console.info "  exclude:", pattern, exclude if @config.debug
+        return false if exclude
       for pattern in patterns
-        return true if pattern.charAt(0) != '!' and minimatch @filename, pattern
+        include = pattern.charAt(0) != '!' and minimatch @filename, pattern
+        console.info "  include:", pattern, include if @config.debug
+        return true if include
     else
-      console.log @filename, patterns, minimatch @filename, patterns
-      return minimatch @filename, patterns
+      include = minimatch @filename, patterns
+      console.info "  include:", patterns, include if @config.debug
+      return include
     return false
-
 
   _load: ->
     return @editor.getText() if @editor?

@@ -1,4 +1,5 @@
 MochatomView = require './mochatom-view'
+MochatomController = require './mochatom-controller'
 {CompositeDisposable} = require 'atom'
 Config = require './mochatom-config'
 ContextManager = require './mochatom-context-manager'
@@ -13,49 +14,35 @@ module.exports = Mochatom =
   decorationManager: null
 
   activate: (state) ->
-    console.log "MOCHATOM: Activate"
+    @_view = new MochatomView
+    @_controller = new MochatomController
+    @_subscriptions = new CompositeDisposable
+    @_decorationManager = new DecorationManager
+    @_contextManager =  new ContextManager
+    @_config = new Config
 
-    @mochatomView = new MochatomView state.mochatomViewState
-    @modalPanel = atom.workspace.addBottomPanel item: @mochatomView.getElement(), visible: false
-
-    # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
-    @subscriptions = new CompositeDisposable
-
-    # Register command that toggles this view
-    @subscriptions.add atom.commands.add 'atom-workspace', 'mochatom:toggle': => @toggle()
-
-    @subscriptions.add atom.project.onDidChangePaths (projectPaths) ->
-      # TODO: implement this
-      console.log "onDidChangePaths", projectPaths
-
-    Config.init => # TODO: use the ready() pattern
-      # register text editor observer
-      @decorationManager = new DecorationManager
-      @decorationManager.init todo: this # TODO: :)
-      @contextManager =  new ContextManager
-      @contextManager.init config: Config, decorationManager: @decorationManager
-      @subscriptions.add atom.workspace.onDidChangeActivePaneItem @decorationManager.updateErrorMessage
-
-        # (item) =>
-        # console.log "onDidChangeActivePaneItem", item
-        # context = @_contextManager.getByPath item?.getPath?()
-        # context?.updateErrorMessage()
-
-      @subscriptions.add atom.workspace.observeTextEditors @contextManager.registerEditor
+    # boot
+    @_config.init()
+    @_config.ready().then =>
+      @_view.init state: state.viewState
+      @_controller.init view: @_view
+      @_decorationManager.init controller: @_controller
+      @_contextManager.init config: @_config, decorationManager: @_decorationManager
+      @_subscriptions.add atom.workspace.onDidChangeActivePaneItem @_decorationManager.updateErrorMessage
+      @_subscriptions.add atom.workspace.observeTextEditors @_contextManager.registerEditor
+      @_subscriptions.add atom.commands.add 'atom-workspace', 'mochatom:toggle': => @toggle()
+      @_subscriptions.add atom.project.onDidChangePaths (projectPaths) ->
+        # TODO: implement this
+        console.log "onDidChangePaths", projectPaths
 
 
   deactivate: ->
-    @modalPanel.destroy()
-    @subscriptions.dispose()
-    @mochatomView.destroy()
+    @_controller.destroy()
+    @_subscriptions.dispose()
+    @_view.destroy()
 
   serialize: ->
-    mochatomViewState: @mochatomView.serialize()
+    viewState: @_view.serialize()
 
   toggle: ->
-    if @modalPanel.isVisible()
-      console.log 'Disable Mochatom'
-      @modalPanel.hide()
-    else
-      console.log 'Enable Mochatom'
-      @modalPanel.show()
+    console.log "Mochatom toggle :)"

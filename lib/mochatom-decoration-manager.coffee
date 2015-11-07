@@ -3,16 +3,17 @@ class DecorationManager
 
   constructor: ->
     @_decorations = {}
-    @_todo = null
+    @_controller = null
 
 
   init: (options) ->
-    @_todo = options.todo # TODO: :)
+    @_controller = options.controller
 
 
   update: (ctx) ->
     desc = @_getDesc ctx
     desc.update = true
+    desc.errorMessages = {}
 
   addDecoration: (ctx, line, className, errorMessage) ->
     desc = @_getDesc ctx
@@ -56,10 +57,9 @@ class DecorationManager
       row = desc.ctx.editor.getCursorBufferPosition().row
       errorMessage = desc.errorMessages[row]
       if errorMessage
-        @_todo.mochatomView.message.innerHTML = "Mochatom #{errorMessage}"
-        @_todo.modalPanel.show()
+        @_controller.show errorMessage
         return
-    @_todo.modalPanel.hide()
+    @_controller.hide()
 
 
 module.exports = DecorationManager

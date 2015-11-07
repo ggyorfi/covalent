@@ -1,11 +1,19 @@
 path = require 'path'
 
-module.exports = Config =
+class Config
 
-  _configs: {}
+  constructor: ->
+    @_projects = {}
+    @_promise = new Promise (resolve) => @_resolve = resolve
 
-  init: (callback) ->
-    Promise.all(@_loadConfigFiles()).then callback
+
+  init: (options) ->
+    Promise.all(@_loadConfigFiles()).then => @_resolve()
+
+
+  ready: ->
+    @_promise
+
 
   _loadConfigFiles: ->
     for dir in atom.project.getDirectories()
@@ -17,8 +25,9 @@ module.exports = Config =
             config = JSON.parse data
             config._root = root + path.sep
             @_prepareConfigObject config, root
-            @_configs[root + path.sep] = config
+            @_projects[root + path.sep] = config
           return # prevent exidental return in promise then
+
 
   _prepareConfigObject: (config, dirPath) ->
     addRoot = (value) -> value.replace /\{ROOT\}/g, dirPath
@@ -33,5 +42,9 @@ module.exports = Config =
     config.helpers = prepSrc config.helpers if config.helpers?
     config.env[key] = addRoot value for own key, value of config.env
 
+
   lookup: (filename) ->
-    return config for key, config of @_configs when filename.indexOf(key) == 0
+    return config for key, config of @_projects when filename.indexOf(key) == 0
+
+
+module.exports = Config

@@ -1,21 +1,28 @@
 module.exports = class MochatomView
 
-  constructor: (serializedState) ->
+  constructor: ->
+    @_element = null
+    @_message = null
+
+  init: (options) ->
     # Create root element
-    @element = document.createElement('div')
-    @element.classList.add('mochatom')
+    @_element = document.createElement 'div'
+    @_element.classList.add 'mochatom'
 
     # Create message element
-    @message = document.createElement('div')
-    @message.classList.add('message')
-    @element.appendChild(@message)
+    @_message = document.createElement 'div'
+    @_message.classList.add 'message'
+    @_element.appendChild @_message
 
   # Returns an object that can be retrieved when package is activated
   serialize: ->
 
   # Tear down any state and detach
   destroy: ->
-    @element.remove()
+    @_element.remove()
 
   getElement: ->
-    @element
+    @_element
+
+  updateMessage: (msg) ->
+    @_message.innerHTML = msg

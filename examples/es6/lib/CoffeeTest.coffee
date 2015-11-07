@@ -1,5 +1,8 @@
 class Test
 
-  returnValue: (p) -> x.y.z = 1; p
+  returnValue: (p) ->
+    # x.y = 10
+    return p
+
 
 module.exports = Test
