@@ -97,10 +97,10 @@ class ContextManager
       subscriptions.dispose()
 
     subscriptions.add editor.onDidSave ->
-      ctx.run() if ctx.spec # TODO: -> move logic to Context class
+      ctx.run()
 
-    subscriptions.add editor.onDidStopChanging ->
-      ctx.run() if ctx.spec # TODO: -> move logic to Context class + configurable
+    subscriptions.add editor.onDidStopChanging =>
+      ctx.run() if ctx.config?.runOnFly
 
     subscriptions.add editor.onDidChangeCursorPosition =>
       @_decorationManager.updateErrorMessage()

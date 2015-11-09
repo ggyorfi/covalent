@@ -1,7 +1,9 @@
 class Test
 
   returnValue: (p) ->
-    # x.y = 10
+    x = 10
+    y = 20
+    x = 20
     return p
 
 

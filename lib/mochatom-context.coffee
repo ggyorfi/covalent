@@ -18,19 +18,26 @@ class Context
   @_es6Instrumenter: new isparta.Instrumenter
   @_coffeeInstrumenter: new coffeeCoverage.CoverageInstrumentor instrumentor: 'istanbul', coverageVar: '__coverage__'
   @_runtimeError: false
+  @_activeTest: null
 
 
   constructor: (@filename, @config, @decorationManager) ->
+    @lastRelatedTest = null
     @lineOffset = 0
     @compiler = @src = @spec = false
     @testRelated = @src = true if @_checkPath @config.src
     @testRelated = @spec = true if @_checkPath @config.spec
     for compiler, config of @config.compilers when @_checkPath config.src
-        @compiler = compiler
-        break
+      @compiler = compiler
+      break
 
 
   run: () ->
+    # TODO: test long compile to overlap with the next test session!!!
+    unless @spec
+      @lastRelatedTest?.run()
+      return
+    Context._activeTest = this
     Context._runtimeError = false
     Context._pass = "TEST"
     @manager.start()
@@ -47,22 +54,20 @@ class Context
           mocha.reporter @_mochaReporter
           mocha.addFile @filename
           try
-            mocha.run =>
-              @_showResults cov
-              @decorationManager.applyDecorations()
-              @manager.stop()
+            mocha.run => @_end cov
           catch err
             @_reportError err
-            @_showResults cov
-            @decorationManager.applyDecorations()
-            @manager.stop()
+            @_end cov
         else
-          @_showResults @manager.coverage()
-          @decorationManager.applyDecorations()
-          @manager.stop()
+          @_end @manager.coverage()
     catch err
       Context._runtimeError = true
 
+
+  _end: (cov) ->
+    @_showResults cov
+    @decorationManager.applyDecorations()
+    @manager.stop()
 
 
   _mochaReporter: (mochaRunner) =>
@@ -112,6 +117,7 @@ class Context
 
 
   _compileSrc: (src) ->
+    @lastRelatedTest = Context._activeTest
     if Context._pass == "TEST"
       if @compiler == 'babel'
         src = Context._es6Instrumenter.instrumentSync src, @filename
@@ -134,11 +140,11 @@ class Context
 
 
   _compileCoffe: (src) ->
-    @lineOffset = -1
+    @lineOffset = -2
     @map = null
     try
       compiled = coffee.compile src, filename: @filename, sourceMap: true
-      @map = compiled.v3SourceMap
+      # @map = compiled.v3SourceMap
       return compiled.js
     catch err
       @lineOffset = 0

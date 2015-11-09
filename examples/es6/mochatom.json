@@ -1,4 +1,5 @@
 {
+    "runOnFly": true,
     "src": "{ROOT}/lib/**/*.+(js|coffee)",
     "spec": "{ROOT}/spec/**/*.+(js|coffee)",
     "helpers": [
