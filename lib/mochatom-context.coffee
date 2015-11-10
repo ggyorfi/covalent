@@ -4,6 +4,7 @@ babel = require 'babel-core'
 minimatch = require 'minimatch'
 isparta = require 'isparta'
 istanbul = require 'istanbul'
+chai = require 'chai'
 Module = require 'module'
 Mocha = require 'mocha'
 Base = Mocha.reporters.Base
@@ -41,7 +42,7 @@ class Context
     Context._runtimeError = false
     Context._pass = "TEST"
     @manager.start()
-    mocha = new Mocha();
+    mocha = new Mocha
     mocha.reporter @_mochaReporter
     mocha.addFile @filename
     try
@@ -50,7 +51,7 @@ class Context
           Context._pass = "REPORT"
           cov = @manager.coverage()
           @manager.start()
-          mocha = new Mocha();
+          mocha = new Mocha
           mocha.reporter @_mochaReporter
           mocha.addFile @filename
           try
@@ -71,7 +72,7 @@ class Context
 
 
   _mochaReporter: (mochaRunner) =>
-    Base.call @, mochaRunner
+    Base.call this, mochaRunner
     mochaRunner.on 'fail', (test) =>
       if Context._pass == "TEST"
         Context._runtimeError = true
@@ -83,7 +84,7 @@ class Context
     console.info "%c#{err.stack}", "color: blue" if @config.debug
     rows = err.stack.split /[\r\n]/
     msg = "<strong>#{err.message}</strong>"
-    rx = new RegExp "(#{@config._root}[^:]*):.*?(\\d+)(?::(\\d+))?"
+    rx = new RegExp "(#{@config._root}[^:]*?):.*?(\\d+)(?::(\\d+))?"
     done = false
     for row in rows
       row.replace rx, (str, filename, line, pos) =>
@@ -140,11 +141,11 @@ class Context
 
 
   _compileCoffe: (src) ->
-    @lineOffset = -2
+    @lineOffset = -1
     @map = null
     try
       compiled = coffee.compile src, filename: @filename, sourceMap: true
-      # @map = compiled.v3SourceMap
+      @map = compiled.v3SourceMap
       return compiled.js
     catch err
       @lineOffset = 0
@@ -179,7 +180,7 @@ class Context
     console.log "match:", @filename
     if Array.isArray patterns
       for pattern in patterns
-        excluded = pattern.charAt(0) == '!' and minimatch @filename, pattern.substring 1
+        exclude = pattern.charAt(0) == '!' and minimatch @filename, pattern.substring 1
         console.info "  exclude:", pattern, exclude if @config.debug
         return false if exclude
       for pattern in patterns
@@ -204,9 +205,8 @@ class Context
       collector.files().forEach (filename) =>
         ctx = @manager.get filename
         if ctx?.editor?
-          # ctx.removeAllDecorations()
           report = collector.fileCoverageFor filename
-          for line, lc of report.l # when lc != undefined
+          for line, lc of report.l
             className = if lc > 0 then 'tested-line' else 'untested-line'
             @decorationManager.addDecoration ctx, parseInt(line) - 1, className
       @decorationManager.applyDecorations()

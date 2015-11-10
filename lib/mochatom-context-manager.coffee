@@ -114,10 +114,18 @@ class ContextManager
     r.cache = Module._cache # ???
     dirname = path.dirname filename
     wrapper = Module.wrap "\n#{content}"
-    compiledWrapper = vm.runInContext wrapper, @_sandbox, filename: filename
+    console.groupCollapsed filename
+    console.log @_addLineNumbers wrapper # TODO: config
+    console.groupEnd()
+    compiledWrapper = vm.runInContext wrapper, @_sandbox, filename: "#{filename}:MOCHATOM"
     args = [ m.exports, r, m, filename, dirname ]
     compiledWrapper.apply m.exports, args
 
+  _addLineNumbers: (src) ->
+    l = 2
+    "  1 " + src.replace /\n/mg, ->
+      if l < 10 then "\n  #{l++} "
+      else if l < 100 then "\n #{l++} "
 
   coverage: ->
     @_sandbox.__coverage__

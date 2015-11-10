@@ -10,8 +10,8 @@ describe "Test", ->
   describe "test()", ->
 
     it "returns the parameter", ->
-      expect(_test.returnValue 10).to.equal 10
+      x.y = 10
+      expect(_test.returnValue 10).to.equal 11
 
     it "returns the parameter", ->
-      x.y = null
-      expect(_test.returnValue 11).to.equal 11
+      expect(_test.returnValue 11).to.equal 1
