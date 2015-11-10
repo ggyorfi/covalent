@@ -13,4 +13,4 @@ describe "Test", ->
       expect(_test.returnValue 10).to.equal 10
 
     it "returns the parameter", ->
-      expect(_test.returnValue 11).to.equal 10
+      expect(_test.returnValue 11).to.equal 1

@@ -106,19 +106,21 @@ class ContextManager
       @_decorationManager.updateErrorMessage()
 
 
-  compileModule: (m, content, filename) ->
+  compileModule: (m, content, ctx) ->
     r = (path) -> m.require path
     r.resolve = (request) -> Module._resolveFilename request, m
     r.main = process.mainModule
     r.extensions = Module._extensions
     r.cache = Module._cache # ???
-    dirname = path.dirname filename
+    dirname = path.dirname ctx.filename
     wrapper = Module.wrap "\n#{content}"
-    console.groupCollapsed filename
-    console.log @_addLineNumbers wrapper # TODO: config
-    console.groupEnd()
-    compiledWrapper = vm.runInContext wrapper, @_sandbox, filename: "#{filename}:MOCHATOM"
-    args = [ m.exports, r, m, filename, dirname ]
+    if ctx?.debug 'logCompiledCode'
+      console.groupCollapsed ctx.filename
+      console.log @_addLineNumbers wrapper # TODO: config
+      console.groupEnd()
+    # modify the filename to bypass built in coffescript source map support in atom
+    compiledWrapper = vm.runInContext wrapper, @_sandbox, filename: "#{ctx.filename}:MOCHATOM"
+    args = [ m.exports, r, m, ctx.filename, dirname ]
     compiledWrapper.apply m.exports, args
 
   _addLineNumbers: (src) ->
@@ -128,7 +130,7 @@ class ContextManager
       else if l < 100 then "\n #{l++} "
 
   coverage: ->
-    @_sandbox.__coverage__
+    @_sandbox?.__coverage__
 
 
 module.exports = ContextManager

@@ -1,9 +1,9 @@
 {
     "runOnFly": true,
     "src": "{ROOT}/lib/**/*.+(js|coffee)",
-    "spec": "{ROOT}/spec/**/*.+(js|coffee)",
+    "spec": "{ROOT}/spec/**/*-spec.+(js|coffee)",
     "load": [
-        "{ROOT}/test/helpers/window.js"
+        "{ROOT}/spec/*.js"
     ],
     "env": {
         "__SOURCE__": "{ROOT}/lib/"

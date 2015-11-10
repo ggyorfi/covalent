@@ -66,7 +66,7 @@ class Context
 
 
   _end: (cov) ->
-    @_showResults cov
+    @_showResults cov if cov?
     @decorationManager.applyDecorations()
     @manager.stop()
 
@@ -81,7 +81,7 @@ class Context
 
 
   _reportError: (err) ->
-    console.info "%c#{err.stack}", "color: blue" if @config.debug
+    console.info "%c#{err.stack}", "color: blue" if @debug 'logErrors'
     rows = err.stack.split /[\r\n]/
     msg = "<strong>#{err.message}</strong>"
     rx = new RegExp "(#{@config._root}[^:]*?):.*?(\\d+)(?::(\\d+))?"
@@ -109,7 +109,7 @@ class Context
     @lineOffset = 0
     try
       src = if @src then @_compileSrc src else @_compileTest src
-      @manager.compileModule m, src, @filename
+      @manager.compileModule m, src, this
     catch err
       if Context._pass == "TEST"
         Context._runtimeError = true
@@ -177,19 +177,20 @@ class Context
 
 
   _checkPath: (patterns) ->
-    console.log "match:", @filename
+    debug = @debug 'logFilters'
+    console.log "match:", @filename if debug
     if Array.isArray patterns
       for pattern in patterns
         exclude = pattern.charAt(0) == '!' and minimatch @filename, pattern.substring 1
-        console.info "  exclude:", pattern, exclude if @config.debug
+        console.info "  exclude:", pattern, exclude if debug
         return false if exclude
       for pattern in patterns
         include = pattern.charAt(0) != '!' and minimatch @filename, pattern
-        console.info "  include:", pattern, include if @config.debug
+        console.info "  include:", pattern, include if debug
         return true if include
     else
       include = minimatch @filename, patterns
-      console.info "  include:", patterns, include if @config.debug
+      console.info "  include:", patterns, include if debug
       return include
     return false
 
@@ -213,5 +214,8 @@ class Context
 
     @manager.stop()
 
+
+  debug: (functionality) ->
+    @config.debug == true or @config.debug?[functionality]
 
 module.exports = Context

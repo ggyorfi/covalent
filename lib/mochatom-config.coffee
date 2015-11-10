@@ -1,4 +1,6 @@
 path = require 'path'
+glob = require 'glob'
+
 
 class Config
 
@@ -39,7 +41,17 @@ class Config
     comp.src = prepSrc comp.src for own name, comp of config.compilers when comp.src?
     config.src = prepSrc config.src
     config.spec = prepSrc config.spec
-    config.helpers = prepSrc config.helpers if config.helpers?
+    if config.load?
+      config.load = [ config.load ] unless Array.isArray config.load
+      config.load = prepSrc config.load
+      config._loadFiles = []
+      for pattern in config.load
+        console.log "1>", pattern
+        files = glob.sync pattern
+        console.log "2>", files
+        config._loadFiles.push file for file in files if files
+      console.log config
+
     config.env[key] = addRoot value for own key, value of config.env
 
 
