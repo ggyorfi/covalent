@@ -1,4 +1,4 @@
-Test = require '../lib/CoffeeTest'
+Test = require __SOURCE__ + '/CoffeeTest'
 
 describe "Test", ->
 

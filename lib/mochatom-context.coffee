@@ -1,16 +1,16 @@
-fs = require 'fs'
-path = require 'path'
+{SourceMapConsumer} = require 'source-map'
 babel = require 'babel-core'
-minimatch = require 'minimatch'
+Base = Mocha.reporters.Base
+chai = require 'chai'
+coffee = require 'coffee-script'
+coffeeCoverage = require 'coffee-coverage'
+fs = require 'fs'
 isparta = require 'isparta'
 istanbul = require 'istanbul'
-chai = require 'chai'
-Module = require 'module'
+minimatch = require 'minimatch'
 Mocha = require 'mocha'
-Base = Mocha.reporters.Base
-{SourceMapConsumer} = require 'source-map'
-coffeeCoverage = require 'coffee-coverage'
-coffee = require 'coffee-script'
+Module = require 'module'
+path = require 'path'
 
 class Context
 

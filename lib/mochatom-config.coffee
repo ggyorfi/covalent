@@ -1,5 +1,4 @@
 path = require 'path'
-glob = require 'glob'
 
 
 class Config
@@ -31,28 +30,23 @@ class Config
           return # prevent exidental return in promise then
 
 
-  _prepareConfigObject: (config, dirPath) ->
-    addRoot = (value) -> value.replace /\{ROOT\}/g, dirPath
+  _prepareConfigObject: (config, root) ->
+    comp.src = @_prepSrc comp.src, root for own name, comp of config.compilers when comp.src?
+    config.src = @_prepSrc config.src, root
+    config.spec = @_prepSrc config.spec, root
+    config.load = @_prepSrc config.load, root if config.load
+    config.env[key] = @_addRoot value, root for own key, value of config.env
+    console.log config
 
-    prepSrc = (src) ->
-      unless Array.isArray src then addRoot src
-      else addRoot value for value, i in src
 
-    comp.src = prepSrc comp.src for own name, comp of config.compilers when comp.src?
-    config.src = prepSrc config.src
-    config.spec = prepSrc config.spec
-    if config.load?
-      config.load = [ config.load ] unless Array.isArray config.load
-      config.load = prepSrc config.load
-      config._loadFiles = []
-      for pattern in config.load
-        console.log "1>", pattern
-        files = glob.sync pattern
-        console.log "2>", files
-        config._loadFiles.push file for file in files if files
-      console.log config
+  _addRoot: (value, root) ->
+    value = value.replace /\{ROOT\}/g, root
+    value.replace /\/\//g, '/'
 
-    config.env[key] = addRoot value for own key, value of config.env
+
+  _prepSrc: (src, root) ->
+    unless Array.isArray src then @_addRoot src, root
+    else @_addRoot value, root for value, i in src
 
 
   lookup: (filename) ->
