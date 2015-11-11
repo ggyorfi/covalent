@@ -56,14 +56,14 @@ class ContextManager
       --pending || (fn && fn())
 
 
-  start: ->
+  start: (env) ->
     @_isModuleHackEnabled = true
     @_moduleCache = {}
     @_sandbox = {}
     vm.createContext @_sandbox
+    @_sandbox[key] = value for own key, value of env
     @_sandbox.console = console
     @_sandbox.global = @_sandbox
-    # Context._sandbox.__srcroot = "../lib/"
     @_sandbox.expect = chai.expect
 
 

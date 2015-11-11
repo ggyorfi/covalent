@@ -3,7 +3,7 @@
     "src": "{ROOT}/lib/**/*.+(js|coffee)",
     "spec": "{ROOT}/spec/**/*-spec.+(js|coffee)",
     "load": [
-        "{ROOT}/spec/*.js"
+        "{ROOT}/spec/window.coffee"
     ],
     "env": {
         "__SOURCE__": "{ROOT}/lib/"

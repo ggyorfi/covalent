@@ -36,7 +36,6 @@ class Config
     config.spec = @_prepSrc config.spec, root
     config.load = @_prepSrc config.load, root if config.load
     config.env[key] = @_addRoot value, root for own key, value of config.env
-    console.log config
 
 
   _addRoot: (value, root) ->

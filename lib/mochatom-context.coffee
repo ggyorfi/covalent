@@ -1,6 +1,4 @@
-{SourceMapConsumer} = require 'source-map'
 babel = require 'babel-core'
-Base = Mocha.reporters.Base
 chai = require 'chai'
 coffee = require 'coffee-script'
 coffeeCoverage = require 'coffee-coverage'
@@ -11,6 +9,9 @@ minimatch = require 'minimatch'
 Mocha = require 'mocha'
 Module = require 'module'
 path = require 'path'
+glob = require 'glob-all'
+{SourceMapConsumer} = require 'source-map'
+Base = Mocha.reporters.Base
 
 class Context
 
@@ -28,6 +29,7 @@ class Context
     @compiler = @src = @spec = false
     @testRelated = @src = true if @_checkPath @config.src
     @testRelated = @spec = true if @_checkPath @config.spec
+    @testRelated = true if @_checkPath @config.load
     for compiler, config of @config.compilers when @_checkPath config.src
       @compiler = compiler
       break
@@ -40,20 +42,12 @@ class Context
       return
     Context._activeTest = this
     Context._runtimeError = false
-    Context._pass = "TEST"
-    @manager.start()
-    mocha = new Mocha
-    mocha.reporter @_mochaReporter
-    mocha.addFile @filename
+    mocha = @_initMocha "TEST"
     try
       mocha.run =>
         if Context._runtimeError
-          Context._pass = "REPORT"
           cov = @manager.coverage()
-          @manager.start()
-          mocha = new Mocha
-          mocha.reporter @_mochaReporter
-          mocha.addFile @filename
+          mocha = @_initMocha "REPORT"
           try
             mocha.run => @_end cov
           catch err
@@ -63,6 +57,19 @@ class Context
           @_end @manager.coverage()
     catch err
       Context._runtimeError = true
+
+
+  _initMocha: (pass) ->
+    Context._pass = pass
+    @manager.start @config.env ? {}
+    mocha = new Mocha
+    mocha.reporter @_mochaReporter
+    load = @config.load
+    if load
+      for filename in glob.sync(load.slice(0), cache: false)
+        mocha.addFile filename
+    mocha.addFile @filename
+    return mocha
 
 
   _end: (cov) ->
