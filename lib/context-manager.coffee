@@ -1,6 +1,8 @@
 vm = require 'vm'
 path = require 'path'
 chai = require 'chai'
+# sinon = require 'sinon'
+# sinonChai = require 'sinon-chai'
 Module = require 'module'
 Context = require './context'
 Mocha = require 'mocha'
@@ -56,15 +58,19 @@ class ContextManager
       --pending || (fn && fn())
 
 
-  start: (env) ->
+  start: (config) ->
     @_isModuleHackEnabled = true
     @_moduleCache = {}
     @_sandbox = {}
     vm.createContext @_sandbox
-    @_sandbox[key] = value for own key, value of env
+    @_sandbox[key] = value for own key, value of config.env
     @_sandbox.console = console
     @_sandbox.global = @_sandbox
-    @_sandbox.expect = chai.expect
+    if optMocha = config.options?.mocha
+      if optChai = optMocha.chai
+        @_sandbox.assert = chai.expect if optChai.interface == "assert"
+        @_sandbox.expect = chai.expect if optChai.interface == "expect"
+        chai.should() if optChai.interface == "should"
 
 
   stop: ->

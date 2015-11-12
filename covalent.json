@@ -1,0 +1,36 @@
+{
+    "options": {
+        "mocha": {
+            "ui": "bdd",
+            "chai": {
+                "interface": "expect",
+                "sinon-chai": true
+            }
+        },
+        "jasmine": false,
+        "sinon": true
+    },
+    "runOnFly": false,
+    "src": "{ROOT}/lib/**/*.+(js|coffee)",
+    "spec": "{ROOT}/spec/**/*-spec.+(js|coffee)",
+    "load": [
+        "{ROOT}/spec/window.coffee"
+    ],
+    "compilers": {
+        "coffeescript": {
+            "src": "{ROOT}/**/*.coffee"
+        },
+        "babel": {
+            "src": [
+                "{ROOT}/lib/**/*.js",
+                "{ROOT}/spec/**/*.js"
+            ]
+        }
+    },
+    "debug-example-1": true,
+    "debug": {
+        "logCompiledCode": false,
+        "logErrors": true,
+        "logFilters": false
+    }
+}

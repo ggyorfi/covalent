@@ -61,9 +61,13 @@ class Context
 
   _initMocha: (pass) ->
     Context._pass = pass
-    @manager.start @config.env ? {}
+    @manager.start @config
     mocha = new Mocha
     mocha.reporter @_mochaReporter
+
+    # if @config.options?.sinon
+    #   mocha.addFile 'sinon'
+    #
     load = @config.load
     if load
       for filename in glob.sync(load.slice(0), cache: false)
