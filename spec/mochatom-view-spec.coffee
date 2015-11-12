@@ -1,5 +1,5 @@
-MochatomView = require '../lib/mochatom-view'
+ErrorView = require '../lib/covalent-view'
 
-describe "MochatomView", ->
+describe "ErrorView", ->
   it "has one valid test", ->
     expect("life").toBe "easy"

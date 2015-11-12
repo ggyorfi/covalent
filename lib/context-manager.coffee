@@ -2,7 +2,7 @@ vm = require 'vm'
 path = require 'path'
 chai = require 'chai'
 Module = require 'module'
-Context = require './mochatom-context'
+Context = require './context'
 Mocha = require 'mocha'
 {CompositeDisposable} = require 'atom'
 
@@ -26,7 +26,7 @@ class ContextManager
     @_prevModuleLoad = Module._load
     Module._load = @_moduleLoad
     Mocha.prototype.loadFiles = @_mochaLoadFiles
-    Mocha.prototype._mochatomManager = this
+    Mocha.prototype._covalentManager = this
 
 
   _moduleLoad: (request, parent, isMain) =>
@@ -50,9 +50,9 @@ class ContextManager
     pending = @files.length
     @files.forEach (file) =>
       file = path.resolve file
-      suite.emit 'pre-require', @_mochatomManager._sandbox, file, this
+      suite.emit 'pre-require', @_covalentManager._sandbox, file, this
       suite.emit 'require', require(file), file, this
-      suite.emit 'post-require', @_mochatomManager._sandbox, file, this
+      suite.emit 'post-require', @_covalentManager._sandbox, file, this
       --pending || (fn && fn())
 
 

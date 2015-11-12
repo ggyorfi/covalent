@@ -1,4 +1,4 @@
-module.exports = class MochatomView
+module.exports = class ErrorView
 
   constructor: ->
     @_element = null
@@ -7,7 +7,7 @@ module.exports = class MochatomView
   init: (options) ->
     # Create root element
     @_element = document.createElement 'div'
-    @_element.classList.add 'mochatom'
+    @_element.classList.add 'covalent'
 
     # Create message element
     @_message = document.createElement 'div'

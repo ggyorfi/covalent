@@ -1,10 +1,10 @@
 {
-  "name": "mochatom",
-  "main": "./lib/mochatom",
+  "name": "covalent",
+  "main": "./lib/covalent",
   "version": "0.0.0",
   "description": "A short description of your package",
   "keywords": [],
-  "repository": "https://github.com/atom/mochatom",
+  "repository": "https://github.com/atom/covalent",
   "license": "MIT",
   "engines": {
     "atom": ">=1.0.0 <2.0.0"

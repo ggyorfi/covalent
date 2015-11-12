@@ -19,7 +19,7 @@ class Config
   _loadConfigFiles: ->
     for dir in atom.project.getDirectories()
       do (dir) =>
-        file = dir.getFile 'mochatom.json'
+        file = dir.getFile 'covalent.json'
         file.read(true).then (data) =>
           if data
             root = dir.getPath()

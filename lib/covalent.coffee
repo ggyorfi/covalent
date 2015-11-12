@@ -1,21 +1,15 @@
-MochatomView = require './mochatom-view'
-MochatomController = require './mochatom-controller'
+ErrorView = require './error-view'
+MainController = require './main-controller'
 {CompositeDisposable} = require 'atom'
-Config = require './mochatom-config'
-ContextManager = require './mochatom-context-manager'
-DecorationManager = require './mochatom-decoration-manager'
+Config = require './config'
+ContextManager = require './context-manager'
+DecorationManager = require './decoration-manager'
 
-module.exports = Mochatom =
-
-  mochatomView: null
-  modalPanel: null
-  subscriptions: null
-  contextManager: null
-  decorationManager: null
+module.exports = Covalent =
 
   activate: (state) ->
-    @_view = new MochatomView
-    @_controller = new MochatomController
+    @_view = new ErrorView
+    @_controller = new MainController
     @_subscriptions = new CompositeDisposable
     @_decorationManager = new DecorationManager
     @_contextManager =  new ContextManager
@@ -30,7 +24,7 @@ module.exports = Mochatom =
       @_contextManager.init config: @_config, decorationManager: @_decorationManager
       @_subscriptions.add atom.workspace.onDidChangeActivePaneItem @_decorationManager.updateErrorMessage
       @_subscriptions.add atom.workspace.observeTextEditors @_contextManager.registerEditor
-      @_subscriptions.add atom.commands.add 'atom-workspace', 'mochatom:toggle': => @toggle()
+      @_subscriptions.add atom.commands.add 'atom-workspace', 'covalent:toggle': => @toggle()
       @_subscriptions.add atom.project.onDidChangePaths (projectPaths) ->
         # TODO: implement this
         console.log "onDidChangePaths", projectPaths
@@ -45,4 +39,4 @@ module.exports = Mochatom =
     viewState: @_view.serialize()
 
   toggle: ->
-    console.log "Mochatom toggle :)"
+    console.log "Covalent toggle :)"

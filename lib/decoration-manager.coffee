@@ -15,6 +15,7 @@ class DecorationManager
     desc.update = true
     desc.errorMessages = {}
 
+
   addDecoration: (ctx, line, className, errorMessage) ->
     desc = @_getDesc ctx
     desc.queue.push

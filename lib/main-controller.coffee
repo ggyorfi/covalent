@@ -1,4 +1,4 @@
-class MochatomController
+class MainController
 
 
   constructor: ->
@@ -23,4 +23,4 @@ class MochatomController
     @_modalPanel.destroy()
 
 
-module.exports = MochatomController
+module.exports = MainController

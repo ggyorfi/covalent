@@ -2,19 +2,19 @@
 'context-menu':
   'atom-text-editor': [
     {
-      'label': 'Toggle mochatom'
-      'command': 'mochatom:toggle'
+      'label': 'Toggle covalent'
+      'command': 'covalent:toggle'
     }
   ]
 'menu': [
   {
     'label': 'Packages'
     'submenu': [
-      'label': 'mochatom'
+      'label': 'covalent'
       'submenu': [
         {
           'label': 'Toggle'
-          'command': 'mochatom:toggle'
+          'command': 'covalent:toggle'
         }
       ]
     ]

@@ -1,40 +1,40 @@
-Mochatom = require '../lib/mochatom'
+Covalent = require '../lib/covalent'
 
 # Use the command `window:run-package-specs` (cmd-alt-ctrl-p) to run specs.
 #
 # To run a specific `it` or `describe` block add an `f` to the front (e.g. `fit`
 # or `fdescribe`). Remove the `f` to unfocus the block.
 
-describe "Mochatom", ->
+describe "Covalent", ->
   [workspaceElement, activationPromise] = []
 
   beforeEach ->
     workspaceElement = atom.views.getView(atom.workspace)
-    activationPromise = atom.packages.activatePackage('mochatom')
+    activationPromise = atom.packages.activatePackage('covalent')
 
-  describe "when the mochatom:toggle event is triggered", ->
+  describe "when the covalent:toggle event is triggered", ->
     it "hides and shows the modal panel", ->
       # Before the activation event the view is not on the DOM, and no panel
       # has been created
-      expect(workspaceElement.querySelector('.mochatom')).not.toExist()
+      expect(workspaceElement.querySelector('.covalent')).not.toExist()
 
       # This is an activation event, triggering it will cause the package to be
       # activated.
-      atom.commands.dispatch workspaceElement, 'mochatom:toggle'
+      atom.commands.dispatch workspaceElement, 'covalent:toggle'
 
       waitsForPromise ->
         activationPromise
 
       runs ->
-        expect(workspaceElement.querySelector('.mochatom')).toExist()
+        expect(workspaceElement.querySelector('.covalent')).toExist()
 
-        mochatomElement = workspaceElement.querySelector('.mochatom')
-        expect(mochatomElement).toExist()
+        covalentElement = workspaceElement.querySelector('.covalent')
+        expect(covalentElement).toExist()
 
-        mochatomPanel = atom.workspace.panelForItem(mochatomElement)
-        expect(mochatomPanel.isVisible()).toBe true
-        atom.commands.dispatch workspaceElement, 'mochatom:toggle'
-        expect(mochatomPanel.isVisible()).toBe false
+        covalentPanel = atom.workspace.panelForItem(covalentElement)
+        expect(covalentPanel.isVisible()).toBe true
+        atom.commands.dispatch workspaceElement, 'covalent:toggle'
+        expect(covalentPanel.isVisible()).toBe false
 
     it "hides and shows the view", ->
       # This test shows you an integration test testing at the view level.
@@ -45,18 +45,18 @@ describe "Mochatom", ->
       # workspaceElement to the DOM are generally slower than those off DOM.
       jasmine.attachToDOM(workspaceElement)
 
-      expect(workspaceElement.querySelector('.mochatom')).not.toExist()
+      expect(workspaceElement.querySelector('.covalent')).not.toExist()
 
       # This is an activation event, triggering it causes the package to be
       # activated.
-      atom.commands.dispatch workspaceElement, 'mochatom:toggle'
+      atom.commands.dispatch workspaceElement, 'covalent:toggle'
 
       waitsForPromise ->
         activationPromise
 
       runs ->
         # Now we can test for view visibility
-        mochatomElement = workspaceElement.querySelector('.mochatom')
-        expect(mochatomElement).toBeVisible()
-        atom.commands.dispatch workspaceElement, 'mochatom:toggle'
-        expect(mochatomElement).not.toBeVisible()
+        covalentElement = workspaceElement.querySelector('.covalent')
+        expect(covalentElement).toBeVisible()
+        atom.commands.dispatch workspaceElement, 'covalent:toggle'
+        expect(covalentElement).not.toBeVisible()
