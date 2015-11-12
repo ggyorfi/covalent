@@ -24,7 +24,8 @@ module.exports = Covalent =
       @_contextManager.init config: @_config, decorationManager: @_decorationManager
       @_subscriptions.add atom.workspace.onDidChangeActivePaneItem @_decorationManager.updateErrorMessage
       @_subscriptions.add atom.workspace.observeTextEditors @_contextManager.registerEditor
-      @_subscriptions.add atom.commands.add 'atom-workspace', 'covalent:toggle': => @toggle()
+      @_subscriptions.add atom.commands.add 'atom-workspace', 'covalent:update': =>
+        console.log "UPDATE!!!"
       @_subscriptions.add atom.project.onDidChangePaths (projectPaths) ->
         # TODO: implement this
         console.log "onDidChangePaths", projectPaths
