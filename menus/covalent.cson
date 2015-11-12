@@ -2,19 +2,19 @@
 'context-menu':
   'atom-text-editor': [
     {
-      'label': 'Toggle covalent'
-      'command': 'covalent:toggle'
+      'label': 'Run tests'
+      'command': 'covalent:update'
     }
   ]
 'menu': [
   {
     'label': 'Packages'
     'submenu': [
-      'label': 'covalent'
+      'label': 'Covalent'
       'submenu': [
         {
-          'label': 'Toggle'
-          'command': 'covalent:toggle'
+          'label': 'Run tests'
+          'command': 'covalent:update'
         }
       ]
     ]

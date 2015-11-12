@@ -20,7 +20,7 @@
         }
     },
     "debug-example-1": true,
-    "debug-example-2": {
+    "debug": {
         "logCompiledCode": false,
         "logErrors": true,
         "logFilters": false

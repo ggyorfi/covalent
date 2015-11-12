@@ -1,7 +1,7 @@
 {
   "name": "covalent",
   "main": "./lib/covalent",
-  "version": "0.0.0",
+  "version": "0.8.0-alpha",
   "description": "A short description of your package",
   "keywords": [],
   "repository": "https://github.com/atom/covalent",
