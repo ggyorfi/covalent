@@ -25,6 +25,7 @@ class Config
             root = dir.getPath()
             config = JSON.parse data
             config._root = root + path.sep
+            @_setDeafaultOtions config
             @_prepareConfigObject config, root
             @_projects[root + path.sep] = config
           return # prevent exidental return in promise then
@@ -36,6 +37,18 @@ class Config
     config.spec = @_prepSrc config.spec, root
     config.load = @_prepSrc config.load, root if config.load
     config.env[key] = @_addRoot value, root for own key, value of config.env
+
+
+  _setDeafaultOtions: (config) ->
+    opts = config.options ? {}
+    unless opts.jasmin
+      unless opts.mocha
+        opts.mocha = ui: "bdd"
+      unless opts.mocha.chai
+        opts.mocha.chai = interface: "expect", "sinon-chai": true
+      unless opts.sinon == false
+        opts.sinon = true
+    config.options = opts
 
 
   _addRoot: (value, root) ->
